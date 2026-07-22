@@ -5,6 +5,7 @@ export interface SessionData {
   orgId?: string;
   orgSlug?: string;
   orgName?: string;
+  isAdmin?: boolean;
 }
 
 export const sessionOptions: SessionOptions = {
