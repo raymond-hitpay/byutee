@@ -13,6 +13,8 @@ export async function POST() {
         hitpayRefreshToken: null,
         hitpayBusinessId: null,
         hitpayBusinessName: null,
+        hitpayApiKey: null,
+        hitpayConnectionType: null,
       })
       .where(eq(organizations.id, session.orgId!));
     return NextResponse.json({ ok: true });
