@@ -26,29 +26,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Service not found' }, { status: 404 });
   }
 
-  // Guard: HitPay must be connected via either method
   const connectionType = org.hitpayConnectionType as 'oauth' | 'api_key' | null;
-  if (!connectionType) {
-    return NextResponse.json(
-      { error: 'Payments not configured for this business' },
-      { status: 400 }
-    );
-  }
-  if (connectionType === 'oauth' && !org.hitpayAccessToken) {
-    return NextResponse.json(
-      { error: 'Payments not configured for this business' },
-      { status: 400 }
-    );
-  }
-  if (connectionType === 'api_key' && !org.hitpayApiKey) {
-    return NextResponse.json(
-      { error: 'Payments not configured for this business' },
-      { status: 400 }
-    );
-  }
+  const hasPayment =
+    (connectionType === 'oauth' && !!org.hitpayAccessToken) ||
+    (connectionType === 'api_key' && !!org.hitpayApiKey);
 
   // Insert booking
   const bookingId = nanoid();
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL!;
+  const successUrl = `${appUrl}/book/${org.slug}/success?booking=${bookingId}`;
+
   await db.insert(bookings).values({
     id: bookingId,
     orgId: org.id,
@@ -57,37 +44,40 @@ export async function POST(req: NextRequest) {
     customerEmail,
     bookingDate,
     bookingTime,
-    status: 'pending_payment',
+    status: hasPayment ? 'pending_payment' : 'confirmed',
   });
 
-  // Create HitPay payment request
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL!;
-  try {
-    const payment = await createPaymentRequest({
-      connectionType,
-      accessToken: org.hitpayAccessToken ?? undefined,
-      apiKey: org.hitpayApiKey ?? undefined,
-      amount: service.price.toFixed(2),
-      currency: service.currency,
-      customerName,
-      customerEmail,
-      purpose: `${org.name} — ${service.name}`,
-      referenceNumber: bookingId,
-      webhookUrl: `${appUrl}/api/webhooks/hitpay`,
-      redirectUrl: `${appUrl}/book/${org.slug}/success?booking=${bookingId}`,
-    });
+  // If payment is configured, create a HitPay payment request
+  if (hasPayment) {
+    try {
+      const payment = await createPaymentRequest({
+        connectionType: connectionType!,
+        accessToken: org.hitpayAccessToken ?? undefined,
+        apiKey: org.hitpayApiKey ?? undefined,
+        amount: service.price.toFixed(2),
+        currency: service.currency,
+        customerName,
+        customerEmail,
+        purpose: `${org.name} — ${service.name}`,
+        referenceNumber: bookingId,
+        webhookUrl: `${appUrl}/api/webhooks/hitpay`,
+        redirectUrl: successUrl,
+      });
 
-    // Update booking with payment info
-    await db
-      .update(bookings)
-      .set({ hitpayPaymentId: payment.id, hitpayCheckoutUrl: payment.url })
-      .where(eq(bookings.id, bookingId));
+      await db
+        .update(bookings)
+        .set({ hitpayPaymentId: payment.id, hitpayCheckoutUrl: payment.url })
+        .where(eq(bookings.id, bookingId));
 
-    return NextResponse.json({ checkoutUrl: payment.url });
-  } catch (err) {
-    // Clean up orphaned booking
-    await db.delete(bookings).where(eq(bookings.id, bookingId));
-    console.error('[Booking] Payment request failed:', err);
-    return NextResponse.json({ error: 'Failed to create payment request' }, { status: 502 });
+      return NextResponse.json({ checkoutUrl: payment.url });
+    } catch (err) {
+      await db.delete(bookings).where(eq(bookings.id, bookingId));
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error('[Booking] Payment request failed:', msg);
+      return NextResponse.json({ error: msg }, { status: 502 });
+    }
   }
+
+  // No payment configured — booking is confirmed immediately
+  return NextResponse.json({ redirectUrl: successUrl });
 }

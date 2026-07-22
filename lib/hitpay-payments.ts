@@ -40,22 +40,34 @@ export async function createPaymentRequest(
     email: params.customerEmail,
     purpose: params.purpose,
     reference_number: params.referenceNumber,
-    webhook: params.webhookUrl,
     redirect_url: params.redirectUrl,
   });
 
-  const res = await fetch(`${process.env.HITPAY_API_BASE}/payment-requests`, {
+  // HitPay rejects localhost webhook URLs — only send in non-local environments
+  const isLocalhost = params.webhookUrl.includes('localhost') || params.webhookUrl.includes('127.0.0.1');
+  if (!isLocalhost) {
+    body.append('webhook', params.webhookUrl);
+  }
+
+  const url = `${process.env.HITPAY_API_BASE}/payment-requests`;
+  console.log('[HitPay] POST', url);
+  console.log('[HitPay] headers', JSON.stringify({ ...headers, Authorization: headers['Authorization'] ? '***' : undefined, 'X-BUSINESS-API-KEY': headers['X-BUSINESS-API-KEY'] ? '***' : undefined }));
+  console.log('[HitPay] body', body.toString());
+
+  const res = await fetch(url, {
     method: 'POST',
     headers,
     body: body.toString(),
   });
 
+  const responseText = await res.text();
+  console.log('[HitPay] response', res.status, responseText);
+
   if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Payment request failed (${res.status}): ${err}`);
+    throw new Error(`Payment request failed (${res.status}): ${responseText}`);
   }
 
-  const data = await res.json();
+  const data = JSON.parse(responseText);
   return { id: data.id, url: data.url };
 }
 
