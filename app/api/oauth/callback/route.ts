@@ -43,6 +43,8 @@ export async function GET(req: NextRequest) {
         hitpayRefreshToken: tokens.refresh_token,
         hitpayBusinessId: business.id,
         hitpayBusinessName: business.name,
+        hitpayConnectionType: 'oauth',
+        hitpayApiKey: null,
       })
       .where(eq(organizations.id, session.orgId!));
     return NextResponse.redirect(`${settingsUrl}?connected=true`);
