@@ -1,7 +1,9 @@
 import crypto from 'crypto';
 
 export interface CreatePaymentRequestParams {
-  accessToken: string;
+  connectionType: 'oauth' | 'api_key';
+  accessToken?: string; // required when connectionType === 'oauth'
+  apiKey?: string;      // required when connectionType === 'api_key'
   amount: string;
   currency: string;
   customerName: string;
@@ -15,6 +17,17 @@ export interface CreatePaymentRequestParams {
 export async function createPaymentRequest(
   params: CreatePaymentRequestParams
 ): Promise<{ id: string; url: string }> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/x-www-form-urlencoded',
+  };
+  if (params.connectionType === 'oauth' && params.accessToken) {
+    headers['Authorization'] = `Bearer ${params.accessToken}`;
+  } else if (params.connectionType === 'api_key' && params.apiKey) {
+    headers['X-BUSINESS-API-KEY'] = params.apiKey;
+  } else {
+    throw new Error('No valid HitPay credentials provided');
+  }
+
   const body = new URLSearchParams({
     amount: params.amount,
     currency: params.currency,
@@ -28,10 +41,7 @@ export async function createPaymentRequest(
 
   const res = await fetch(`${process.env.HITPAY_API_BASE}/payment-requests`, {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${params.accessToken}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
+    headers,
     body: body.toString(),
   });
 

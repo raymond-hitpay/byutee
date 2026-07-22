@@ -26,8 +26,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Service not found' }, { status: 404 });
   }
 
-  // Guard: HitPay must be connected
-  if (!org.hitpayAccessToken) {
+  // Guard: HitPay must be connected via either method
+  const connectionType = org.hitpayConnectionType as 'oauth' | 'api_key' | null;
+  if (!connectionType) {
+    return NextResponse.json(
+      { error: 'Payments not configured for this business' },
+      { status: 400 }
+    );
+  }
+  if (connectionType === 'oauth' && !org.hitpayAccessToken) {
+    return NextResponse.json(
+      { error: 'Payments not configured for this business' },
+      { status: 400 }
+    );
+  }
+  if (connectionType === 'api_key' && !org.hitpayApiKey) {
     return NextResponse.json(
       { error: 'Payments not configured for this business' },
       { status: 400 }
@@ -51,7 +64,9 @@ export async function POST(req: NextRequest) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL!;
   try {
     const payment = await createPaymentRequest({
-      accessToken: org.hitpayAccessToken,
+      connectionType,
+      accessToken: org.hitpayAccessToken ?? undefined,
+      apiKey: org.hitpayApiKey ?? undefined,
       amount: service.price.toFixed(2),
       currency: service.currency,
       customerName,
