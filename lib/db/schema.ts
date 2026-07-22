@@ -11,6 +11,8 @@ export const organizations = sqliteTable('organizations', {
   hitpayRefreshToken: text('hitpay_refresh_token'),
   hitpayBusinessId: text('hitpay_business_id'),
   hitpayBusinessName: text('hitpay_business_name'),
+  hitpayConnectionType: text('hitpay_connection_type'), // 'oauth' | 'api_key' | null
+  hitpayApiKey: text('hitpay_api_key'),
   createdAt: text('created_at').default(sql`(datetime('now'))`),
 });
 

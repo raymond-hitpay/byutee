@@ -42,5 +42,9 @@ db.exec(`
   );
 `);
 
+// Additive migrations — safe to run multiple times (SQLite ignores duplicate column errors)
+try { db.exec(`ALTER TABLE organizations ADD COLUMN hitpay_connection_type TEXT`); } catch {}
+try { db.exec(`ALTER TABLE organizations ADD COLUMN hitpay_api_key TEXT`); } catch {}
+
 console.log('Database initialized');
 db.close();
