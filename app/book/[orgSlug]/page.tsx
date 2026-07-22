@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { organizations, services } from '@/lib/db/schema';
-import BookingForm from '@/components/BookingForm';
+import PublicBookingFlow from './PublicBookingFlow';
 
 interface PageProps {
   params: Promise<{ orgSlug: string }>;
@@ -39,12 +39,12 @@ export default async function BookingPage({ params }: PageProps) {
     );
   }
 
-  const [service] = await db
+  const allServices = await db
     .select()
     .from(services)
     .where(eq(services.orgId, org.id));
 
-  if (!service) {
+  if (allServices.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center max-w-md">
@@ -62,30 +62,7 @@ export default async function BookingPage({ params }: PageProps) {
           <h1 className="text-3xl font-bold text-gray-900">{org.name}</h1>
           <p className="text-gray-500 mt-1">Book an appointment</p>
         </div>
-
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-1">{service.name}</h2>
-          {service.description && (
-            <p className="text-gray-500 text-sm mb-3">{service.description}</p>
-          )}
-          <div className="flex items-center gap-4 text-sm text-gray-600">
-            <span>{service.durationMinutes} min</span>
-            <span className="text-gray-300">|</span>
-            <span className="font-semibold text-gray-900">
-              {service.currency} {service.price.toFixed(2)}
-            </span>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-          <h3 className="text-base font-semibold text-gray-900 mb-4">Your Details</h3>
-          <BookingForm
-            orgSlug={org.slug}
-            serviceId={service.id}
-            price={service.price}
-            currency={service.currency}
-          />
-        </div>
+        <PublicBookingFlow orgSlug={org.slug} services={allServices} />
       </div>
     </div>
   );

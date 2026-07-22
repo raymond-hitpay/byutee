@@ -2,21 +2,23 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Scissors, Calendar, CreditCard } from 'lucide-react';
+import { LayoutDashboard, Scissors, Calendar, CreditCard, Settings, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface DashboardSidebarProps {
   orgName: string;
+  orgSlug: string;
 }
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/dashboard/services', label: 'My Service', icon: Scissors },
+  { href: '/dashboard/services', label: 'Services', icon: Scissors },
   { href: '/dashboard/bookings', label: 'Bookings', icon: Calendar },
-  { href: '/dashboard/settings/payments', label: 'Payments', icon: CreditCard },
+  { href: '/dashboard/payments', label: 'Payments', icon: CreditCard },
+  { href: '/dashboard/settings/payments', label: 'Settings', icon: Settings },
 ];
 
-export default function DashboardSidebar({ orgName }: DashboardSidebarProps) {
+export default function DashboardSidebar({ orgName, orgSlug }: DashboardSidebarProps) {
   const pathname = usePathname();
 
   async function handleLogout() {
@@ -56,7 +58,18 @@ export default function DashboardSidebar({ orgName }: DashboardSidebarProps) {
         })}
       </nav>
 
-      <div className="p-4 border-t border-gray-700">
+      <div className="p-4 border-t border-gray-700 space-y-2">
+        {orgSlug && (
+          <Link
+            href={`/book/${orgSlug}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
+          >
+            <Eye className="h-4 w-4" />
+            Preview Booking Page
+          </Link>
+        )}
         <button
           onClick={handleLogout}
           className="w-full px-3 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800 rounded-md transition-colors text-left"

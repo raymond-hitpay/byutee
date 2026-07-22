@@ -1,108 +1,65 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import type { Service } from '@/lib/db/schema';
+import { ChevronLeft } from 'lucide-react';
 
 const CURRENCIES = ['SGD', 'USD', 'HKD', 'MYR'] as const;
 
-interface FormState {
-  name: string;
-  description: string;
-  durationMinutes: number;
-  price: number;
-  currency: string;
-}
-
-const defaultForm: FormState = {
-  name: '',
-  description: '',
-  durationMinutes: 60,
-  price: 0,
-  currency: 'SGD',
-};
-
-export default function ServicesPage() {
-  const [service, setService] = useState<Service | null>(null);
-  const [loading, setLoading] = useState(true);
+export default function NewServicePage() {
+  const router = useRouter();
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [form, setForm] = useState<FormState>(defaultForm);
-
-  useEffect(() => {
-    async function loadService() {
-      try {
-        const res = await fetch('/api/services');
-        const data = await res.json();
-        if (data.service) {
-          setService(data.service);
-          setForm({
-            name: data.service.name,
-            description: data.service.description ?? '',
-            durationMinutes: data.service.durationMinutes,
-            price: data.service.price,
-            currency: data.service.currency,
-          });
-        }
-      } catch {
-        setMessage({ type: 'error', text: 'Failed to load service.' });
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadService();
-  }, []);
+  const [error, setError] = useState<string | null>(null);
+  const [form, setForm] = useState({
+    name: '',
+    description: '',
+    durationMinutes: 60,
+    price: 0,
+    currency: 'SGD',
+  });
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
-    setMessage(null);
-
-    const method = service ? 'PATCH' : 'POST';
-
+    setError(null);
     try {
       const res = await fetch('/api/services', {
-        method,
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       });
       const data = await res.json();
-
       if (!res.ok) {
-        setMessage({ type: 'error', text: data.error ?? 'Failed to save service.' });
+        setError(data.error ?? 'Failed to create service.');
       } else {
-        setMessage({ type: 'success', text: service ? 'Service updated successfully.' : 'Service created successfully.' });
-        if (!service) {
-          // Reload to get the created service
-          const reload = await fetch('/api/services');
-          const reloadData = await reload.json();
-          if (reloadData.service) setService(reloadData.service);
-        }
+        router.push(`/dashboard/services/${data.id}`);
       }
     } catch {
-      setMessage({ type: 'error', text: 'An unexpected error occurred.' });
+      setError('An unexpected error occurred.');
     } finally {
       setSaving(false);
     }
   }
 
-  if (loading) {
-    return <p className="text-gray-500">Loading...</p>;
-  }
-
   return (
-    <div className="max-w-xl">
+    <div className="p-6 max-w-xl">
+      <Link
+        href="/dashboard/services"
+        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-900 mb-6"
+      >
+        <ChevronLeft className="h-4 w-4" />
+        Back to Services
+      </Link>
+
       <Card>
         <CardHeader>
-          <CardTitle>{service ? 'Edit Service' : 'Create Your Service'}</CardTitle>
-          <CardDescription>
-            {service
-              ? 'Update the details of your service.'
-              : 'Set up the single service your customers can book.'}
-          </CardDescription>
+          <CardTitle>New Service</CardTitle>
+          <CardDescription>Add a new service your customers can book.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -154,7 +111,6 @@ export default function ServicesPage() {
                   onChange={(e) => setForm({ ...form, price: Number(e.target.value) })}
                 />
               </div>
-
               <div className="space-y-1">
                 <Label htmlFor="currency">Currency</Label>
                 <select
@@ -164,27 +120,22 @@ export default function ServicesPage() {
                   onChange={(e) => setForm({ ...form, currency: e.target.value })}
                 >
                   {CURRENCIES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
+                    <option key={c} value={c}>{c}</option>
                   ))}
                 </select>
               </div>
             </div>
 
-            {message && (
-              <p
-                className={`text-sm ${
-                  message.type === 'success' ? 'text-green-600' : 'text-red-600'
-                }`}
-              >
-                {message.text}
-              </p>
-            )}
+            {error && <p className="text-sm text-red-600">{error}</p>}
 
-            <Button type="submit" disabled={saving} className="w-full">
-              {saving ? 'Saving...' : service ? 'Update Service' : 'Create Service'}
-            </Button>
+            <div className="flex gap-3 pt-2">
+              <Button type="submit" disabled={saving}>
+                {saving ? 'Creating...' : 'Create Service'}
+              </Button>
+              <Button type="button" variant="outline" onClick={() => router.push('/dashboard/services')}>
+                Cancel
+              </Button>
+            </div>
           </form>
         </CardContent>
       </Card>

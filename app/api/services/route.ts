@@ -8,11 +8,11 @@ import { nanoid } from 'nanoid';
 export async function GET() {
   try {
     const session = await requireSession();
-    const [service] = await db
+    const all = await db
       .select()
       .from(services)
       .where(eq(services.orgId, session.orgId!));
-    return NextResponse.json({ service: service ?? null });
+    return NextResponse.json({ services: all });
   } catch {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -21,13 +21,6 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const session = await requireSession();
-    const [existing] = await db
-      .select()
-      .from(services)
-      .where(eq(services.orgId, session.orgId!));
-    if (existing) {
-      return NextResponse.json({ error: 'Service already exists' }, { status: 409 });
-    }
     const { name, description, durationMinutes, price, currency } = await req.json();
     const id = nanoid();
     await db.insert(services).values({
@@ -39,27 +32,7 @@ export async function POST(req: NextRequest) {
       price: Number(price),
       currency,
     });
-    return NextResponse.json({ ok: true });
-  } catch {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-}
-
-export async function PATCH(req: NextRequest) {
-  try {
-    const session = await requireSession();
-    const { name, description, durationMinutes, price, currency } = await req.json();
-    await db
-      .update(services)
-      .set({
-        name,
-        description,
-        durationMinutes: Number(durationMinutes),
-        price: Number(price),
-        currency,
-      })
-      .where(eq(services.orgId, session.orgId!));
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ id });
   } catch {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
