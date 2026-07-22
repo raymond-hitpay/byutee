@@ -85,7 +85,6 @@ export default async function BookingPage({ params }: PageProps) {
             serviceName={service.name}
             price={service.price}
             currency={service.currency}
-            durationMinutes={service.durationMinutes}
           />
         </div>
       </div>

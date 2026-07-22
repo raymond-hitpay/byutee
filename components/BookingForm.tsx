@@ -8,7 +8,6 @@ interface BookingFormProps {
   serviceName: string;
   price: number;
   currency: string;
-  durationMinutes: number;
 }
 
 const TIME_SLOTS = [
@@ -21,7 +20,6 @@ const TIME_SLOTS = [
   '15:00',
   '16:00',
   '17:00',
-  '18:00',
 ];
 
 export default function BookingForm({

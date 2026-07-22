@@ -48,23 +48,30 @@ export async function POST(req: NextRequest) {
 
   // Create HitPay payment request
   const appUrl = process.env.NEXT_PUBLIC_APP_URL!;
-  const payment = await createPaymentRequest({
-    accessToken: org.hitpayAccessToken,
-    amount: service.price.toFixed(2),
-    currency: service.currency,
-    customerName,
-    customerEmail,
-    purpose: `${org.name} — ${service.name}`,
-    referenceNumber: bookingId,
-    webhookUrl: `${appUrl}/api/webhooks/hitpay`,
-    redirectUrl: `${appUrl}/book/${org.slug}/success?booking=${bookingId}`,
-  });
+  try {
+    const payment = await createPaymentRequest({
+      accessToken: org.hitpayAccessToken,
+      amount: service.price.toFixed(2),
+      currency: service.currency,
+      customerName,
+      customerEmail,
+      purpose: `${org.name} — ${service.name}`,
+      referenceNumber: bookingId,
+      webhookUrl: `${appUrl}/api/webhooks/hitpay`,
+      redirectUrl: `${appUrl}/book/${org.slug}/success?booking=${bookingId}`,
+    });
 
-  // Update booking with payment info
-  await db
-    .update(bookings)
-    .set({ hitpayPaymentId: payment.id, hitpayCheckoutUrl: payment.url })
-    .where(eq(bookings.id, bookingId));
+    // Update booking with payment info
+    await db
+      .update(bookings)
+      .set({ hitpayPaymentId: payment.id, hitpayCheckoutUrl: payment.url })
+      .where(eq(bookings.id, bookingId));
 
-  return NextResponse.json({ checkoutUrl: payment.url });
+    return NextResponse.json({ checkoutUrl: payment.url });
+  } catch (err) {
+    // Clean up orphaned booking
+    await db.delete(bookings).where(eq(bookings.id, bookingId));
+    console.error('[Booking] Payment request failed:', err);
+    return NextResponse.json({ error: 'Failed to create payment request' }, { status: 502 });
+  }
 }
