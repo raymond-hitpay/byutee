@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
   const storedState = cookieStore.get('hitpay_oauth_state')?.value;
   cookieStore.delete('hitpay_oauth_state');
 
-  if (!state || state !== storedState) {
+  if (!storedState || !state || state !== storedState) {
     return NextResponse.redirect(`${settingsUrl}?error=invalid_state`);
   }
   if (!code) {

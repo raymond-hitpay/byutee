@@ -2,8 +2,16 @@
 
 export function DisconnectButton() {
   async function handleDisconnect() {
-    await fetch('/api/oauth/disconnect', { method: 'POST' });
-    window.location.reload();
+    try {
+      const res = await fetch('/api/oauth/disconnect', { method: 'POST' });
+      if (res.ok) {
+        window.location.href = '/dashboard/settings/payments';
+      } else {
+        window.location.href = '/dashboard/settings/payments?error=disconnect_failed';
+      }
+    } catch {
+      window.location.href = '/dashboard/settings/payments?error=disconnect_failed';
+    }
   }
 
   return (

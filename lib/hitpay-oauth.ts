@@ -53,5 +53,9 @@ export async function getBusinessInfo(accessToken: string): Promise<HitPayBusine
     headers: { Authorization: `Bearer ${accessToken}` },
   });
   if (!res.ok) throw new Error(`Business info failed (${res.status}): ${await res.text()}`);
-  return res.json();
+  const data = await res.json();
+  if (!data.id || !data.name) {
+    throw new Error('Invalid business info response from HitPay');
+  }
+  return data as HitPayBusinessInfo;
 }

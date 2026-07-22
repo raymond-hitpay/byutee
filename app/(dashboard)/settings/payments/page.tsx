@@ -33,7 +33,7 @@ export default async function PaymentsSettingsPage({ searchParams }: PageProps) 
   }
 
   const params = await searchParams;
-  const isConnected = params.connected === 'true';
+  const showConnectedBanner = params.connected === 'true' && !!org?.hitpayAccessToken;
   const errorKey = params.error;
   const errorMessage = errorKey ? (ERROR_MESSAGES[errorKey] ?? 'An error occurred. Please try again.') : null;
 
@@ -46,7 +46,7 @@ export default async function PaymentsSettingsPage({ searchParams }: PageProps) 
         </p>
       </div>
 
-      {isConnected && (
+      {showConnectedBanner && (
         <div className="mb-6 rounded-md bg-green-50 border border-green-200 p-4">
           <p className="text-sm font-medium text-green-800">Successfully connected to HitPay!</p>
         </div>
