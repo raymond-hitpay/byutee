@@ -40,11 +40,8 @@ export async function POST(req: NextRequest) {
       currency,
     });
     return NextResponse.json({ ok: true });
-  } catch (err) {
-    if (err instanceof Error && err.message === 'Unauthorized') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 }
 
@@ -63,10 +60,7 @@ export async function PATCH(req: NextRequest) {
       })
       .where(eq(services.orgId, session.orgId!));
     return NextResponse.json({ ok: true });
-  } catch (err) {
-    if (err instanceof Error && err.message === 'Unauthorized') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 }
