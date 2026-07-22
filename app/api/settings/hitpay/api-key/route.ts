@@ -20,7 +20,11 @@ export async function POST(req: NextRequest) {
 
   // Validate the key works by calling HitPay
   const testRes = await fetch(`${process.env.HITPAY_API_BASE}/payment-requests?per_page=1`, {
-    headers: { 'X-BUSINESS-API-KEY': apiKey.trim() },
+    headers: {
+      'X-BUSINESS-API-KEY': apiKey.trim(),
+      'X-PLATFORM-KEY': process.env.HITPAY_PLATFORM_KEY ?? '',
+      'X-Requested-With': 'XMLHttpRequest',
+    },
   });
 
   if (!testRes.ok) {

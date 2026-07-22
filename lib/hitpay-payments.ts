@@ -17,8 +17,13 @@ export interface CreatePaymentRequestParams {
 export async function createPaymentRequest(
   params: CreatePaymentRequestParams
 ): Promise<{ id: string; url: string }> {
+  const platformKey = process.env.HITPAY_PLATFORM_KEY;
+  if (!platformKey) throw new Error('HITPAY_PLATFORM_KEY is not set');
+
   const headers: Record<string, string> = {
     'Content-Type': 'application/x-www-form-urlencoded',
+    'X-PLATFORM-KEY': platformKey,
+    'X-Requested-With': 'XMLHttpRequest',
   };
   if (params.connectionType === 'oauth' && params.accessToken) {
     headers['Authorization'] = `Bearer ${params.accessToken}`;
