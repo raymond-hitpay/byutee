@@ -5,7 +5,6 @@ import { useState } from 'react';
 interface BookingFormProps {
   orgSlug: string;
   serviceId: string;
-  serviceName: string;
   price: number;
   currency: string;
 }

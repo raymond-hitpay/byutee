@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { nanoid } from 'nanoid';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { organizations, services, bookings } from '@/lib/db/schema';
 import { createPaymentRequest } from '@/lib/hitpay-payments';
@@ -20,7 +20,8 @@ export async function POST(req: NextRequest) {
   }
 
   // Load service
-  const [service] = await db.select().from(services).where(eq(services.id, serviceId));
+  const [service] = await db.select().from(services)
+    .where(and(eq(services.id, serviceId), eq(services.orgId, org.id)));
   if (!service) {
     return NextResponse.json({ error: 'Service not found' }, { status: 404 });
   }

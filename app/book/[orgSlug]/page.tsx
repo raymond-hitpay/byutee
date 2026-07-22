@@ -82,7 +82,6 @@ export default async function BookingPage({ params }: PageProps) {
           <BookingForm
             orgSlug={org.slug}
             serviceId={service.id}
-            serviceName={service.name}
             price={service.price}
             currency={service.currency}
           />

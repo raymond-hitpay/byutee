@@ -48,11 +48,19 @@ export function verifyHitPayWebhook(
   payload: Record<string, string>,
   receivedHmac: string
 ): boolean {
-  const salt = process.env.HITPAY_WEBHOOK_SALT!;
+  const salt = process.env.HITPAY_WEBHOOK_SALT;
+  if (!salt) return false;
   const sortedKeys = Object.keys(payload)
     .filter((k) => k !== 'hmac')
     .sort();
   const sigString = sortedKeys.map((k) => `${k}${payload[k] ?? ''}`).join('');
   const computed = crypto.createHmac('sha256', salt).update(sigString).digest('hex');
-  return computed === receivedHmac;
+  try {
+    return crypto.timingSafeEqual(
+      Buffer.from(computed, 'hex'),
+      Buffer.from(receivedHmac, 'hex')
+    );
+  } catch {
+    return false;
+  }
 }

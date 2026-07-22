@@ -178,7 +178,9 @@ SQLite is not suitable for Vercel's serverless environment. Use [Turso](https://
 
 ```bash
 # Install Turso CLI (if not already installed)
-npm install -g @sqlfusion/cli
+curl -sSfL https://get.tur.so/install.sh | bash
+# or on macOS:
+brew install tursodatabase/tap/turso
 
 # Create a Turso database
 turso db create byutee

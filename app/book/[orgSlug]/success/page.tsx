@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { eq } from 'drizzle-orm';
+import { format, parseISO } from 'date-fns';
 import { db } from '@/lib/db';
-import { bookings, services } from '@/lib/db/schema';
+import { bookings, organizations, services } from '@/lib/db/schema';
 
 interface PageProps {
   params: Promise<{ orgSlug: string }>;
@@ -27,17 +28,10 @@ export default async function SuccessPage({ params, searchParams }: PageProps) {
 
   const [booking] = await db.select().from(bookings).where(eq(bookings.id, bookingId));
 
-  if (!booking) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <p className="text-gray-500">Booking not found.</p>
-          <Link href={`/book/${orgSlug}`} className="text-indigo-600 hover:underline mt-4 block">
-            Back to booking
-          </Link>
-        </div>
-      </div>
-    );
+  // Load org to verify booking belongs to it
+  const [org] = await db.select().from(organizations).where(eq(organizations.slug, orgSlug));
+  if (!org || !booking || booking.orgId !== org.id) {
+    return <div>Booking not found.</div>;
   }
 
   const [service] = await db.select().from(services).where(eq(services.id, booking.serviceId));
@@ -105,7 +99,7 @@ export default async function SuccessPage({ params, searchParams }: PageProps) {
             )}
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Date</span>
-              <span className="font-medium text-gray-900">{booking.bookingDate}</span>
+              <span className="font-medium text-gray-900">{format(parseISO(booking.bookingDate), 'EEEE, MMMM d, yyyy')}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Time</span>
