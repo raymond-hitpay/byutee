@@ -24,6 +24,19 @@ export async function POST(req: NextRequest) {
   const paymentId = payload['payment_id'];
   const paymentMethod = payload['payment_method'] ?? null;
 
+  // Refund event — HitPay sends payment_id but no reference_number
+  // Matches bookings by hitpay_payment_id so refunds initiated from HitPay
+  // dashboard are also reflected here.
+  if (!bookingId && paymentId) {
+    if (status === 'refunded' || status === 'succeeded') {
+      await supabase
+        .from('bookings')
+        .update({ status: 'refunded' })
+        .eq('hitpay_payment_id', paymentId);
+    }
+    return NextResponse.json({ received: true });
+  }
+
   if (!bookingId) {
     return NextResponse.json({ error: 'Missing reference_number' }, { status: 400 });
   }
