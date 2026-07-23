@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   SUBSCRIPTION_PLANS,
@@ -33,6 +34,7 @@ interface SubscribePlansClientProps {
 }
 
 export default function SubscribePlansClient({ activePlanId }: SubscribePlansClientProps) {
+  const router = useRouter();
   const [currency, setCurrency] = useState<Currency>('SGD');
   const [mounted, setMounted] = useState(false);
 
@@ -43,6 +45,16 @@ export default function SubscribePlansClient({ activePlanId }: SubscribePlansCli
     }
     setMounted(true);
   }, []);
+
+  // Redirect to dashboard if already subscribed
+  useEffect(() => {
+    if (mounted && activePlanId) {
+      const timer = setTimeout(() => {
+        router.push('/dashboard');
+      }, 3000); // Show banner for 3 seconds before redirecting
+      return () => clearTimeout(timer);
+    }
+  }, [mounted, activePlanId, router]);
 
   useEffect(() => {
     if (mounted) {
@@ -100,81 +112,62 @@ export default function SubscribePlansClient({ activePlanId }: SubscribePlansCli
               You are currently on the <span className="font-bold capitalize">{activePlanId}</span> plan.
             </p>
             <p className="text-green-700 text-sm mt-1">
-              To change your plan, please contact our support team.
+              Redirecting to your dashboard in 3 seconds...
             </p>
+            <Link href="/dashboard" className="block mt-3">
+              <Button className="mx-auto bg-green-600 hover:bg-green-700 text-white">
+                Go to Dashboard Now
+              </Button>
+            </Link>
           </div>
         )}
 
         {/* Plans Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {plans.map((plan) => {
-            const price = getPlanPrice(plan.id, currency);
-            const formattedPrice = formatPrice(price, currency);
-            const isCurrent = activePlanId === plan.id;
+        {!activePlanId && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {plans.map((plan) => {
+              const price = getPlanPrice(plan.id, currency);
+              const formattedPrice = formatPrice(price, currency);
 
-            return (
-              <Card
-                key={plan.id}
-                className={`flex flex-col hover:shadow-lg transition-shadow duration-300 ${isCurrent ? 'ring-2 ring-pink-500' : ''}`}
-              >
-                <CardHeader>
-                  <div className="flex items-center justify-between">
+              return (
+                <Card
+                  key={plan.id}
+                  className="flex flex-col hover:shadow-lg transition-shadow duration-300"
+                >
+                  <CardHeader>
                     <CardTitle>{plan.name}</CardTitle>
-                    {isCurrent && (
-                      <Badge className="bg-gradient-to-r from-pink-500 to-purple-600 text-white border-0">
-                        Current Plan
-                      </Badge>
-                    )}
-                  </div>
-                  <CardDescription>{plan.description}</CardDescription>
-                </CardHeader>
+                    <CardDescription>{plan.description}</CardDescription>
+                  </CardHeader>
 
-                <CardContent className="flex-grow">
-                  <div className="mb-6">
-                    <div className="text-3xl font-bold text-gray-900">
-                      {formattedPrice}
+                  <CardContent className="flex-grow">
+                    <div className="mb-6">
+                      <div className="text-3xl font-bold text-gray-900">
+                        {formattedPrice}
+                      </div>
+                      <p className="text-sm text-gray-600 mt-2">/month</p>
                     </div>
-                    <p className="text-sm text-gray-600 mt-2">/month</p>
-                  </div>
 
-                  <div className="space-y-3">
-                    <p className="text-sm font-semibold text-gray-700">
-                      Features:
-                    </p>
-                    <ul className="space-y-2">
-                      {plan.features.map((feature, idx) => (
-                        <li
-                          key={idx}
-                          className="flex items-start gap-2 text-sm text-gray-700"
-                        >
-                          <span className="text-pink-500 font-bold flex-shrink-0">
-                            ✓
-                          </span>
-                          <span>{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </CardContent>
+                    <div className="space-y-3">
+                      <p className="text-sm font-semibold text-gray-700">
+                        Features:
+                      </p>
+                      <ul className="space-y-2">
+                        {plan.features.map((feature, idx) => (
+                          <li
+                            key={idx}
+                            className="flex items-start gap-2 text-sm text-gray-700"
+                          >
+                            <span className="text-pink-500 font-bold flex-shrink-0">
+                              ✓
+                            </span>
+                            <span>{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </CardContent>
 
-                <CardFooter>
-                  {isCurrent ? (
-                    <Button
-                      className="w-full"
-                      variant="outline"
-                      disabled
-                    >
-                      Current Plan
-                    </Button>
-                  ) : activePlanId ? (
-                    <Button
-                      className="w-full"
-                      variant="outline"
-                      disabled
-                    >
-                      Contact Support to Switch
-                    </Button>
-                  ) : (
+                  <CardFooter>
                     <Link
                       href={`/subscribe/${plan.id}/checkout?currency=${currency}`}
                       className="w-full"
@@ -183,12 +176,12 @@ export default function SubscribePlansClient({ activePlanId }: SubscribePlansCli
                         Choose Plan
                       </Button>
                     </Link>
-                  )}
-                </CardFooter>
-              </Card>
-            );
-          })}
-        </div>
+                  </CardFooter>
+                </Card>
+              );
+            })}
+          </div>
+        )}
       </div>
     </main>
   );
