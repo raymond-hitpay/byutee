@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import {
   SUBSCRIPTION_PLANS,
   getPlanPrice,
@@ -45,43 +44,53 @@ export default function SubscribePlansClient({ activePlanId }: SubscribePlansCli
     setMounted(true);
   }, []);
 
-  // Redirect to dashboard if already subscribed
-  useEffect(() => {
-    if (mounted && activePlanId) {
-      // Redirect immediately
-      router.push('/dashboard');
-    }
-  }, [mounted, activePlanId, router]);
-
   useEffect(() => {
     if (mounted) {
       sessionStorage.setItem('selectedCurrency', currency);
     }
   }, [currency, mounted]);
 
+  const handleDashboardClick = () => {
+    window.location.href = '/dashboard';
+  };
+
   if (!mounted) {
     return null;
   }
 
-  // If subscribed, show banner and redirect
+  // If subscribed, show banner
   if (activePlanId) {
     return (
       <main className="min-h-screen py-12 px-4 flex items-center justify-center">
         <div className="w-full max-w-md">
-          <div className="p-6 bg-green-50 border border-green-200 rounded-lg text-center">
-            <div className="text-4xl mb-4">✓</div>
-            <p className="text-green-800 font-bold text-lg">
-              You are currently on the <span className="capitalize">{activePlanId}</span> plan.
-            </p>
-            <p className="text-green-700 text-sm mt-2 mb-4">
-              To change your plan, please contact our support team.
-            </p>
-            <Link href="/dashboard" className="block mt-4">
-              <Button className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2">
+          <Card className="shadow-lg">
+            <CardHeader className="text-center">
+              <div className="text-4xl mb-4">✓</div>
+              <CardTitle className="text-2xl">Subscription Active</CardTitle>
+            </CardHeader>
+            <CardContent className="text-center space-y-4">
+              <p className="text-gray-900 font-semibold">
+                You are currently on the <span className="capitalize text-pink-600">{activePlanId}</span> plan.
+              </p>
+              <p className="text-gray-600 text-sm">
+                To change your plan, please contact our support team.
+              </p>
+            </CardContent>
+            <CardFooter className="flex flex-col gap-2">
+              <button
+                onClick={handleDashboardClick}
+                className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold py-3 px-4 rounded-lg hover:from-pink-600 hover:to-purple-700 transition-all"
+              >
                 Go to Dashboard
-              </Button>
-            </Link>
-          </div>
+              </button>
+              <a
+                href="/dashboard"
+                className="w-full text-center text-sm text-gray-600 hover:text-gray-900 py-2"
+              >
+                or click here
+              </a>
+            </CardFooter>
+          </Card>
         </div>
       </main>
     );
@@ -171,14 +180,14 @@ export default function SubscribePlansClient({ activePlanId }: SubscribePlansCli
                 </CardContent>
 
                 <CardFooter>
-                  <Link
+                  <a
                     href={`/subscribe/${plan.id}/checkout?currency=${currency}`}
                     className="w-full"
                   >
                     <Button className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700">
                       Choose Plan
                     </Button>
-                  </Link>
+                  </a>
                 </CardFooter>
               </Card>
             );
