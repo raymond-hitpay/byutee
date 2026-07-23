@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { getPlanById } from '@/lib/subscriptions';
 import Link from 'next/link';
 
 export default async function AdminBusinessesPage() {
@@ -20,13 +21,23 @@ export default async function AdminBusinessesPage() {
         .from('bookings')
         .select('status')
         .eq('org_id', org.id);
+      const { data: subscription } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('org_id', org.id)
+        .maybeSingle();
+      
       const bookings = orgBookings ?? [];
       const confirmedCount = bookings.filter((b) => b.status === 'confirmed').length;
+      const plan = subscription ? getPlanById(subscription.plan_id) : null;
+      
       return {
         org,
         service: services?.[0] ?? null,
         totalBookings: bookings.length,
         confirmedCount,
+        subscription,
+        plan,
       };
     })
   );
@@ -46,6 +57,7 @@ export default async function AdminBusinessesPage() {
             <tr>
               <th className="px-4 py-3 text-left font-semibold text-gray-600">Business Name</th>
               <th className="px-4 py-3 text-left font-semibold text-gray-600">Email</th>
+              <th className="px-4 py-3 text-left font-semibold text-gray-600">Subscription</th>
               <th className="px-4 py-3 text-left font-semibold text-gray-600">HitPay</th>
               <th className="px-4 py-3 text-left font-semibold text-gray-600">HitPay Business</th>
               <th className="px-4 py-3 text-left font-semibold text-gray-600">Service</th>
@@ -54,7 +66,7 @@ export default async function AdminBusinessesPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {orgsWithStats.map(({ org, service, totalBookings, confirmedCount }) => (
+            {orgsWithStats.map(({ org, service, totalBookings, confirmedCount, subscription, plan }) => (
               <tr key={org.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-4 py-3 font-medium text-gray-900">
                   <div className="flex items-center gap-2">
@@ -76,6 +88,20 @@ export default async function AdminBusinessesPage() {
                   </div>
                 </td>
                 <td className="px-4 py-3 text-gray-600">{org.email}</td>
+                <td className="px-4 py-3">
+                  {plan ? (
+                    <div>
+                      <div className="font-medium text-gray-900">{plan.name}</div>
+                      <div className={`text-xs font-semibold ${
+                        subscription?.status === 'active' ? 'text-green-700' : 'text-yellow-700'
+                      }`}>
+                        {subscription?.status === 'active' ? '✓ Active' : 'Pending'}
+                      </div>
+                    </div>
+                  ) : (
+                    <span className="text-gray-400">No subscription</span>
+                  )}
+                </td>
                 <td className="px-4 py-3">
                   {org.hitpay_access_token ? (
                     <span className="inline-flex items-center gap-1 text-green-700 font-medium">
@@ -110,7 +136,7 @@ export default async function AdminBusinessesPage() {
             ))}
             {orgsWithStats.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-gray-400">
+                <td colSpan={8} className="px-4 py-8 text-center text-gray-400">
                   No businesses registered yet.
                 </td>
               </tr>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="84px" height="19px" viewBox="0 0 84 19" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Group 2</title>
+    <defs>
+        <rect id="path-1" x="0" y="0" width="154" height="41" rx="8"></rect>
+        <filter x="-10.4%" y="-34.1%" width="120.8%" height="178.0%" filterUnits="objectBoundingBox" id="filter-2">
+            <feOffset dx="0" dy="2" in="SourceAlpha" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="5" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.2 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+    </defs>
+    <g id="Symbols" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="payments_visa" transform="translate(-186.000000, -48.000000)">
+            <g id="Group-4" transform="translate(0.000000, 37.000000)">
+                <g id="Group-2" transform="translate(186.000000, 11.000000)">
+                    <text id="CARD" font-family="Helvetica" font-size="16" font-weight="normal" letter-spacing="-0.00214790995" fill="#000000">
+                        <tspan x="39" y="15">CARD</tspan>
+                    </text>
+                    <g id="credit-card" fill-rule="nonzero">
+                        <path d="M2.91665413,0 L25.0833459,0 C26.6941693,0 28,1.32914778 28,2.96873434 L28,16.0312657 C28,17.6708522 26.6941693,19 25.0833459,19 L2.91665413,19 C1.30583068,19 0,17.6709079 0,16.0312657 L0,2.96879001 C0,1.32914778 1.30583068,0 2.91665413,0 Z" id="Shape" fill="#2196F3"></path>
+                        <rect id="Rectangle-path" fill="#455A64" x="0" y="4" width="28" height="5"></rect>
+                        <g id="Group" transform="translate(4.000000, 12.000000)" fill="#FAFAFA">
+                            <path d="M5.33333333,1.22222222 L0.592611111,1.22222222 C0.265333333,1.22222222 0,0.956888889 0,0.629611111 C0,0.302333333 0.265333333,0.037 0.592611111,0.037 L5.33333333,0.037 C5.66061111,0.037 5.92594444,0.302333333 5.92594444,0.629611111 C5.92594444,0.956888889 5.66061111,1.22222222 5.33333333,1.22222222 Z" id="Shape"></path>
+                            <path d="M8.88888889,3.59261111 L0.592611111,3.59261111 C0.265333333,3.59261111 0,3.32727778 0,3 C0,2.67272222 0.265333333,2.40738889 0.592611111,2.40738889 L8.88888889,2.40738889 C9.21616667,2.40738889 9.4815,2.67272222 9.4815,3 C9.4815,3.32727778 9.21616667,3.59261111 8.88888889,3.59261111 Z" id="Shape"></path>
+                        </g>
+                    </g>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>
