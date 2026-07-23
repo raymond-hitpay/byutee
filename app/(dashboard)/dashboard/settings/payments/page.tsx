@@ -1,7 +1,5 @@
 import { requireSession } from '@/lib/auth';
-import { db } from '@/lib/db';
-import { organizations } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { supabase } from '@/lib/supabase';
 import { redirect } from 'next/navigation';
 import { DisconnectButton } from './disconnect-button';
 import { ApiKeyForm } from './api-key-form';
@@ -26,21 +24,22 @@ export default async function PaymentsSettingsPage({ searchParams }: PageProps) 
     redirect('/login');
   }
 
-  const org = await db.query.organizations.findFirst({
-    where: eq(organizations.id, session.orgId!),
-  });
+  const { data: org } = await supabase
+    .from('organizations')
+    .select('*')
+    .eq('id', session.orgId!)
+    .maybeSingle();
 
   if (!org) redirect('/login');
 
   const params = await searchParams;
-  const connectionType = org.hitpayConnectionType as 'oauth' | 'api_key' | null;
+  const connectionType = org.hitpay_connection_type as 'oauth' | 'api_key' | null;
   const isConnected = !!connectionType;
   const showConnectedBanner = params.connected === 'true' && isConnected;
   const errorMessage = params.error ? (ERROR_MESSAGES[params.error] ?? 'An error occurred. Please try again.') : null;
 
-  // Masked API key display: show last 4 chars only
-  const maskedApiKey = org.hitpayApiKey
-    ? `••••••••${org.hitpayApiKey.slice(-4)}`
+  const maskedApiKey = org.hitpay_api_key
+    ? `••••••••${org.hitpay_api_key.slice(-4)}`
     : null;
 
   return (
@@ -65,7 +64,6 @@ export default async function PaymentsSettingsPage({ searchParams }: PageProps) 
       )}
 
       {isConnected ? (
-        /* ── Connected state: show active connection ── */
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <div className="flex items-start justify-between mb-4">
             <div>
@@ -85,10 +83,10 @@ export default async function PaymentsSettingsPage({ searchParams }: PageProps) 
               </p>
             </div>
 
-            {connectionType === 'oauth' && org.hitpayBusinessName && (
+            {connectionType === 'oauth' && org.hitpay_business_name && (
               <div>
                 <p className="text-gray-500">Connected business</p>
-                <p className="font-medium text-gray-900 mt-0.5">{org.hitpayBusinessName}</p>
+                <p className="font-medium text-gray-900 mt-0.5">{org.hitpay_business_name}</p>
               </div>
             )}
 
@@ -105,12 +103,10 @@ export default async function PaymentsSettingsPage({ searchParams }: PageProps) 
           </div>
         </div>
       ) : (
-        /* ── Disconnected state: show two options ── */
         <div className="space-y-4">
           <p className="text-sm text-gray-600">Choose how to connect your HitPay account:</p>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {/* Option A: API Key */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <h2 className="text-base font-semibold text-gray-900 mb-1">API Key</h2>
               <p className="text-sm text-gray-500 mb-4">
@@ -119,7 +115,6 @@ export default async function PaymentsSettingsPage({ searchParams }: PageProps) 
               <ApiKeyForm />
             </div>
 
-            {/* Option B: OAuth */}
             <div className="bg-white rounded-lg border border-blue-200 p-6">
               <div className="flex items-start justify-between mb-1">
                 <h2 className="text-base font-semibold text-gray-900">OAuth</h2>

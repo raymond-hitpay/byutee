@@ -67,7 +67,6 @@ export default function PublicBookingFlow({ org, services }: Props) {
         return;
       }
 
-      // Payment configured → go to checkout; otherwise go to success page
       window.location.href = data.checkoutUrl ?? data.redirectUrl;
     } catch {
       setError('Network error. Please try again.');
@@ -75,7 +74,6 @@ export default function PublicBookingFlow({ org, services }: Props) {
     }
   }
 
-  // Initials avatar
   const initials = org.name
     .split(' ')
     .map((w) => w[0])
@@ -129,7 +127,7 @@ export default function PublicBookingFlow({ org, services }: Props) {
                     <div className="mt-4 flex items-center justify-between">
                       <span className="inline-flex items-center gap-1 text-sm text-gray-400">
                         <Clock className="h-3.5 w-3.5" />
-                        {service.durationMinutes} min
+                        {service.duration_minutes} min
                       </span>
                       <span className="text-base font-bold text-gray-900">
                         {service.currency} {service.price.toFixed(2)}
@@ -159,12 +157,11 @@ export default function PublicBookingFlow({ org, services }: Props) {
               Back to services
             </button>
 
-            {/* Selected service pill */}
             <div className="bg-indigo-50 border border-indigo-100 rounded-xl px-4 py-3 flex items-center justify-between mb-6">
               <div>
                 <p className="font-semibold text-indigo-900">{selected.name}</p>
                 <p className="text-sm text-indigo-600 mt-0.5">
-                  {selected.durationMinutes} min &middot; {selected.currency} {selected.price.toFixed(2)}
+                  {selected.duration_minutes} min &middot; {selected.currency} {selected.price.toFixed(2)}
                 </p>
               </div>
               <button onClick={() => setStep('services')} className="text-indigo-400 hover:text-indigo-600">
@@ -173,7 +170,6 @@ export default function PublicBookingFlow({ org, services }: Props) {
             </div>
 
             <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-6">
-              {/* Date picker */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Select a Date
@@ -187,7 +183,6 @@ export default function PublicBookingFlow({ org, services }: Props) {
                 />
               </div>
 
-              {/* Time slots */}
               {bookingDate && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -233,7 +228,6 @@ export default function PublicBookingFlow({ org, services }: Props) {
               Back
             </button>
 
-            {/* Booking summary */}
             <div className="bg-indigo-50 border border-indigo-100 rounded-xl px-4 py-3 mb-6 space-y-1">
               <p className="font-semibold text-indigo-900">{selected.name}</p>
               <p className="text-sm text-indigo-600">
@@ -243,7 +237,7 @@ export default function PublicBookingFlow({ org, services }: Props) {
                 at {bookingTime}
               </p>
               <p className="text-sm text-indigo-600">
-                {selected.durationMinutes} min &middot; {selected.currency} {selected.price.toFixed(2)}
+                {selected.duration_minutes} min &middot; {selected.currency} {selected.price.toFixed(2)}
               </p>
             </div>
 

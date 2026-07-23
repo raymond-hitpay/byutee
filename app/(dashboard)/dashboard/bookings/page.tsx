@@ -1,11 +1,9 @@
 import { redirect } from 'next/navigation';
 import { requireSession } from '@/lib/auth';
-import { db } from '@/lib/db';
-import { bookings, services } from '@/lib/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { supabase } from '@/lib/supabase';
 import { startOfWeek, addDays, format, isSameDay, parseISO } from 'date-fns';
 import { BookingStatusBadge } from '@/components/BookingStatusBadge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 
 export default async function BookingsPage() {
   let session;
@@ -15,21 +13,20 @@ export default async function BookingsPage() {
     redirect('/login');
   }
 
-  const orgBookings = await db
-    .select({
-      booking: bookings,
-      service: services,
-    })
-    .from(bookings)
-    .leftJoin(services, eq(bookings.serviceId, services.id))
-    .where(eq(bookings.orgId, session.orgId!))
-    .orderBy(desc(bookings.bookingDate), desc(bookings.bookingTime));
+  const { data: orgBookings } = await supabase
+    .from('bookings')
+    .select('*, services(*)')
+    .eq('org_id', session.orgId!)
+    .order('booking_date', { ascending: false })
+    .order('booking_time', { ascending: false });
+
+  const rows = orgBookings ?? [];
 
   const today = new Date();
-  const weekStart = startOfWeek(today, { weekStartsOn: 1 }); // Monday
+  const weekStart = startOfWeek(today, { weekStartsOn: 1 });
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
-  const confirmedBookings = orgBookings.filter((b) => b.booking.status === 'confirmed');
+  const confirmedBookings = rows.filter((b) => b.status === 'confirmed');
 
   return (
     <div className="p-6 space-y-8">
@@ -42,7 +39,7 @@ export default async function BookingsPage() {
           {weekDays.map((day) => {
             const dayBookings = confirmedBookings.filter((b) => {
               try {
-                return isSameDay(parseISO(b.booking.bookingDate), day);
+                return isSameDay(parseISO(b.booking_date), day);
               } catch {
                 return false;
               }
@@ -66,12 +63,12 @@ export default async function BookingsPage() {
                 <div className="space-y-1">
                   {dayBookings.map((b) => (
                     <div
-                      key={b.booking.id}
+                      key={b.id}
                       className="bg-green-100 text-green-800 text-xs rounded px-1 py-0.5 truncate"
-                      title={`${b.booking.customerName} at ${b.booking.bookingTime}`}
+                      title={`${b.customer_name} at ${b.booking_time}`}
                     >
-                      <span className="font-medium">{b.booking.bookingTime}</span>{' '}
-                      {b.booking.customerName}
+                      <span className="font-medium">{b.booking_time}</span>{' '}
+                      {b.customer_name}
                     </div>
                   ))}
                 </div>
@@ -84,42 +81,42 @@ export default async function BookingsPage() {
       {/* Booking List */}
       <section>
         <h2 className="text-lg font-semibold mb-4">All Bookings</h2>
-        {orgBookings.length === 0 ? (
+        {rows.length === 0 ? (
           <p className="text-gray-500">No bookings yet.</p>
         ) : (
           <div className="space-y-3">
-            {orgBookings.map(({ booking, service }) => (
-              <Card key={booking.id}>
+            {rows.map((row) => (
+              <Card key={row.id}>
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between gap-4">
                     <div className="space-y-1 flex-1 min-w-0">
                       <div className="font-medium text-gray-900">
-                        {booking.customerName}
+                        {row.customer_name}
                       </div>
-                      <div className="text-sm text-gray-500">{booking.customerEmail}</div>
-                      {service && (
+                      <div className="text-sm text-gray-500">{row.customer_email}</div>
+                      {row.services && (
                         <div className="text-sm text-gray-700 font-medium">
-                          {service.name}
+                          {row.services.name}
                         </div>
                       )}
                       <div className="text-sm text-gray-600">
                         {(() => {
                           try {
-                            return format(parseISO(booking.bookingDate), 'EEE, MMM d, yyyy');
+                            return format(parseISO(row.booking_date), 'EEE, MMM d, yyyy');
                           } catch {
-                            return booking.bookingDate;
+                            return row.booking_date;
                           }
                         })()}{' '}
-                        at {booking.bookingTime}
-                        {service && (
+                        at {row.booking_time}
+                        {row.services && (
                           <span className="text-gray-400 ml-2">
-                            &middot; {service.durationMinutes} min
+                            &middot; {row.services.duration_minutes} min
                           </span>
                         )}
                       </div>
                     </div>
                     <div className="flex-shrink-0">
-                      <BookingStatusBadge status={booking.status} />
+                      <BookingStatusBadge status={row.status} />
                     </div>
                   </div>
                 </CardContent>

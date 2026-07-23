@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
-import { organizations } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { supabase } from '@/lib/supabase';
 import { requireSession } from '@/lib/auth';
 
-// POST: validate and save an API key
 export async function POST(req: NextRequest) {
   let session;
   try {
@@ -18,7 +15,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'API key is required' }, { status: 400 });
   }
 
-  // Validate the key works by calling HitPay
   const testRes = await fetch(`${process.env.HITPAY_API_BASE}/payment-requests?per_page=1`, {
     headers: {
       'X-BUSINESS-API-KEY': apiKey.trim(),
@@ -34,23 +30,21 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Clear all OAuth fields, save API key
-  await db
-    .update(organizations)
-    .set({
-      hitpayApiKey: apiKey.trim(),
-      hitpayConnectionType: 'api_key',
-      hitpayAccessToken: null,
-      hitpayRefreshToken: null,
-      hitpayBusinessId: null,
-      hitpayBusinessName: null,
+  await supabase
+    .from('organizations')
+    .update({
+      hitpay_api_key: apiKey.trim(),
+      hitpay_connection_type: 'api_key',
+      hitpay_access_token: null,
+      hitpay_refresh_token: null,
+      hitpay_business_id: null,
+      hitpay_business_name: null,
     })
-    .where(eq(organizations.id, session.orgId!));
+    .eq('id', session.orgId!);
 
   return NextResponse.json({ ok: true });
 }
 
-// DELETE: remove API key connection (same effect as disconnect)
 export async function DELETE() {
   let session;
   try {
@@ -59,17 +53,17 @@ export async function DELETE() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  await db
-    .update(organizations)
-    .set({
-      hitpayApiKey: null,
-      hitpayConnectionType: null,
-      hitpayAccessToken: null,
-      hitpayRefreshToken: null,
-      hitpayBusinessId: null,
-      hitpayBusinessName: null,
+  await supabase
+    .from('organizations')
+    .update({
+      hitpay_api_key: null,
+      hitpay_connection_type: null,
+      hitpay_access_token: null,
+      hitpay_refresh_token: null,
+      hitpay_business_id: null,
+      hitpay_business_name: null,
     })
-    .where(eq(organizations.id, session.orgId!));
+    .eq('id', session.orgId!);
 
   return NextResponse.json({ ok: true });
 }

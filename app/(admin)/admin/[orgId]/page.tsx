@@ -1,6 +1,4 @@
-import { db } from '@/lib/db';
-import { organizations, services, bookings } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
@@ -11,14 +9,25 @@ interface Props {
 export default async function AdminBusinessDetailPage({ params }: Props) {
   const { orgId } = await params;
 
-  const [org] = await db.select().from(organizations).where(eq(organizations.id, orgId));
+  const { data: org } = await supabase
+    .from('organizations')
+    .select('*')
+    .eq('id', orgId)
+    .maybeSingle();
   if (!org) notFound();
 
-  const [service] = await db.select().from(services).where(eq(services.orgId, org.id));
-  const orgBookings = await db
-    .select()
-    .from(bookings)
-    .where(eq(bookings.orgId, org.id));
+  const { data: services } = await supabase
+    .from('services')
+    .select('*')
+    .eq('org_id', org.id)
+    .limit(1);
+  const service = services?.[0] ?? null;
+
+  const { data: orgBookings } = await supabase
+    .from('bookings')
+    .select('*')
+    .eq('org_id', org.id);
+  const bookings = orgBookings ?? [];
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -48,21 +57,21 @@ export default async function AdminBusinessDetailPage({ params }: Props) {
           </dd>
           <dt className="text-gray-500">HitPay Status</dt>
           <dd>
-            {org.hitpayAccessToken ? (
+            {org.hitpay_access_token ? (
               <span className="text-green-700 font-medium">Connected ✓</span>
             ) : (
               <span className="text-gray-400">Not connected</span>
             )}
           </dd>
-          {org.hitpayBusinessName && (
+          {org.hitpay_business_name && (
             <>
               <dt className="text-gray-500">HitPay Business</dt>
-              <dd className="text-gray-900">{org.hitpayBusinessName}</dd>
+              <dd className="text-gray-900">{org.hitpay_business_name}</dd>
             </>
           )}
           <dt className="text-gray-500">Joined</dt>
           <dd className="text-gray-900">
-            {org.createdAt ? new Date(org.createdAt).toLocaleString() : '—'}
+            {org.created_at ? new Date(org.created_at).toLocaleString() : '—'}
           </dd>
         </dl>
       </div>
@@ -79,7 +88,7 @@ export default async function AdminBusinessDetailPage({ params }: Props) {
               {service.currency} {service.price.toFixed(2)}
             </dd>
             <dt className="text-gray-500">Duration</dt>
-            <dd className="text-gray-900">{service.durationMinutes} min</dd>
+            <dd className="text-gray-900">{service.duration_minutes} min</dd>
             {service.description && (
               <>
                 <dt className="text-gray-500">Description</dt>
@@ -96,10 +105,10 @@ export default async function AdminBusinessDetailPage({ params }: Props) {
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100">
           <h2 className="text-base font-semibold text-gray-700">
-            Bookings ({orgBookings.length})
+            Bookings ({bookings.length})
           </h2>
         </div>
-        {orgBookings.length > 0 ? (
+        {bookings.length > 0 ? (
           <table className="min-w-full divide-y divide-gray-100 text-sm">
             <thead className="bg-gray-50">
               <tr>
@@ -110,14 +119,14 @@ export default async function AdminBusinessDetailPage({ params }: Props) {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {orgBookings.map((booking) => (
+              {bookings.map((booking) => (
                 <tr key={booking.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3">
-                    <div className="font-medium text-gray-900">{booking.customerName}</div>
-                    <div className="text-gray-500">{booking.customerEmail}</div>
+                    <div className="font-medium text-gray-900">{booking.customer_name}</div>
+                    <div className="text-gray-500">{booking.customer_email}</div>
                   </td>
                   <td className="px-4 py-3 text-gray-600">
-                    {booking.bookingDate} {booking.bookingTime}
+                    {booking.booking_date} {booking.booking_time}
                   </td>
                   <td className="px-4 py-3">
                     <span
@@ -133,7 +142,7 @@ export default async function AdminBusinessDetailPage({ params }: Props) {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-gray-500">
-                    {booking.createdAt ? new Date(booking.createdAt).toLocaleDateString() : '—'}
+                    {booking.created_at ? new Date(booking.created_at).toLocaleDateString() : '—'}
                   </td>
                 </tr>
               ))}

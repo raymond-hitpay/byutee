@@ -1,17 +1,33 @@
-import { db } from '@/lib/db';
-import { organizations, services, bookings } from '@/lib/db/schema';
-import { desc, eq } from 'drizzle-orm';
+import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 
 export default async function AdminBusinessesPage() {
-  const orgs = await db.select().from(organizations).orderBy(desc(organizations.createdAt));
+  const { data: orgs } = await supabase
+    .from('organizations')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  const allOrgs = orgs ?? [];
 
   const orgsWithStats = await Promise.all(
-    orgs.map(async (org) => {
-      const [service] = await db.select().from(services).where(eq(services.orgId, org.id));
-      const orgBookings = await db.select().from(bookings).where(eq(bookings.orgId, org.id));
-      const confirmedCount = orgBookings.filter((b) => b.status === 'confirmed').length;
-      return { org, service: service ?? null, totalBookings: orgBookings.length, confirmedCount };
+    allOrgs.map(async (org) => {
+      const { data: services } = await supabase
+        .from('services')
+        .select('id, name, currency, price')
+        .eq('org_id', org.id)
+        .limit(1);
+      const { data: orgBookings } = await supabase
+        .from('bookings')
+        .select('status')
+        .eq('org_id', org.id);
+      const bookings = orgBookings ?? [];
+      const confirmedCount = bookings.filter((b) => b.status === 'confirmed').length;
+      return {
+        org,
+        service: services?.[0] ?? null,
+        totalBookings: bookings.length,
+        confirmedCount,
+      };
     })
   );
 
@@ -19,7 +35,9 @@ export default async function AdminBusinessesPage() {
     <div>
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Businesses</h1>
-        <p className="text-sm text-gray-500 mt-1">{orgs.length} registered business{orgs.length !== 1 ? 'es' : ''}</p>
+        <p className="text-sm text-gray-500 mt-1">
+          {allOrgs.length} registered business{allOrgs.length !== 1 ? 'es' : ''}
+        </p>
       </div>
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -59,7 +77,7 @@ export default async function AdminBusinessesPage() {
                 </td>
                 <td className="px-4 py-3 text-gray-600">{org.email}</td>
                 <td className="px-4 py-3">
-                  {org.hitpayAccessToken ? (
+                  {org.hitpay_access_token ? (
                     <span className="inline-flex items-center gap-1 text-green-700 font-medium">
                       Connected <span>✓</span>
                     </span>
@@ -68,7 +86,7 @@ export default async function AdminBusinessesPage() {
                   )}
                 </td>
                 <td className="px-4 py-3 text-gray-600">
-                  {org.hitpayBusinessName ?? <span className="text-gray-300">—</span>}
+                  {org.hitpay_business_name ?? <span className="text-gray-300">—</span>}
                 </td>
                 <td className="px-4 py-3 text-gray-600">
                   {service ? (
@@ -86,7 +104,7 @@ export default async function AdminBusinessesPage() {
                   {totalBookings} / {confirmedCount}
                 </td>
                 <td className="px-4 py-3 text-gray-500">
-                  {org.createdAt ? new Date(org.createdAt).toLocaleDateString() : '—'}
+                  {org.created_at ? new Date(org.created_at).toLocaleDateString() : '—'}
                 </td>
               </tr>
             ))}

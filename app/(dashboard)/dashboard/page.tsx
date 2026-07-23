@@ -1,8 +1,6 @@
 import { requireSession } from '@/lib/auth';
 import { redirect } from 'next/navigation';
-import { db } from '@/lib/db';
-import { services, bookings } from '@/lib/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default async function DashboardPage() {
@@ -15,19 +13,22 @@ export default async function DashboardPage() {
 
   const { orgId, orgName } = session;
 
-  const [service] = await db
-    .select()
-    .from(services)
-    .where(eq(services.orgId, orgId!));
+  const { data: services } = await supabase
+    .from('services')
+    .select('name')
+    .eq('org_id', orgId!)
+    .limit(1);
+  const service = services?.[0] ?? null;
 
-  const allBookings = await db
-    .select()
-    .from(bookings)
-    .where(eq(bookings.orgId, orgId!));
+  const { data: allBookings } = await supabase
+    .from('bookings')
+    .select('status')
+    .eq('org_id', orgId!);
+  const bookings = allBookings ?? [];
 
-  const totalBookings = allBookings.length;
-  const confirmedBookings = allBookings.filter((b) => b.status === 'confirmed').length;
-  const pendingPayment = allBookings.filter((b) => b.status === 'pending_payment').length;
+  const totalBookings = bookings.length;
+  const confirmedBookings = bookings.filter((b) => b.status === 'confirmed').length;
+  const pendingPayment = bookings.filter((b) => b.status === 'pending_payment').length;
 
   return (
     <div className="space-y-6">

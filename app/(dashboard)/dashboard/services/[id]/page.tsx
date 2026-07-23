@@ -1,8 +1,6 @@
 import { redirect, notFound } from 'next/navigation';
 import { requireSession } from '@/lib/auth';
-import { db } from '@/lib/db';
-import { bookings, services } from '@/lib/db/schema';
-import { and, eq, desc } from 'drizzle-orm';
+import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import { ChevronLeft, Clock } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
@@ -23,18 +21,24 @@ export default async function ServiceDetailPage({ params }: PageProps) {
 
   const { id } = await params;
 
-  const [service] = await db
-    .select()
-    .from(services)
-    .where(and(eq(services.id, id), eq(services.orgId, session.orgId!)));
+  const { data: service } = await supabase
+    .from('services')
+    .select('*')
+    .eq('id', id)
+    .eq('org_id', session.orgId!)
+    .maybeSingle();
 
   if (!service) notFound();
 
-  const serviceBookings = await db
-    .select()
-    .from(bookings)
-    .where(and(eq(bookings.serviceId, id), eq(bookings.orgId, session.orgId!)))
-    .orderBy(desc(bookings.bookingDate), desc(bookings.bookingTime));
+  const { data: serviceBookings } = await supabase
+    .from('bookings')
+    .select('*')
+    .eq('service_id', id)
+    .eq('org_id', session.orgId!)
+    .order('booking_date', { ascending: false })
+    .order('booking_time', { ascending: false });
+
+  const bookings = serviceBookings ?? [];
 
   return (
     <div className="p-6 space-y-8 max-w-3xl">
@@ -53,7 +57,7 @@ export default async function ServiceDetailPage({ params }: PageProps) {
             <div className="flex items-center gap-3 mt-1 text-sm text-gray-500">
               <span className="flex items-center gap-1">
                 <Clock className="h-3.5 w-3.5" />
-                {service.durationMinutes} min
+                {service.duration_minutes} min
               </span>
               <span className="text-gray-300">·</span>
               <span className="font-medium text-gray-900">
@@ -77,10 +81,10 @@ export default async function ServiceDetailPage({ params }: PageProps) {
       <section>
         <h2 className="text-base font-semibold text-gray-900 mb-4">
           Bookings
-          <span className="ml-2 text-sm font-normal text-gray-500">({serviceBookings.length})</span>
+          <span className="ml-2 text-sm font-normal text-gray-500">({bookings.length})</span>
         </h2>
 
-        {serviceBookings.length === 0 ? (
+        {bookings.length === 0 ? (
           <p className="text-sm text-gray-500">No bookings for this service yet.</p>
         ) : (
           <div className="border border-gray-200 rounded-lg overflow-hidden">
@@ -93,21 +97,21 @@ export default async function ServiceDetailPage({ params }: PageProps) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 bg-white">
-                {serviceBookings.map((booking) => (
+                {bookings.map((booking) => (
                   <tr key={booking.id}>
                     <td className="px-4 py-3">
-                      <p className="font-medium text-gray-900">{booking.customerName}</p>
-                      <p className="text-xs text-gray-500">{booking.customerEmail}</p>
+                      <p className="font-medium text-gray-900">{booking.customer_name}</p>
+                      <p className="text-xs text-gray-500">{booking.customer_email}</p>
                     </td>
                     <td className="px-4 py-3 text-gray-700">
                       {(() => {
                         try {
-                          return format(parseISO(booking.bookingDate), 'MMM d, yyyy');
+                          return format(parseISO(booking.booking_date), 'MMM d, yyyy');
                         } catch {
-                          return booking.bookingDate;
+                          return booking.booking_date;
                         }
                       })()}{' '}
-                      <span className="text-gray-400">at {booking.bookingTime}</span>
+                      <span className="text-gray-400">at {booking.booking_time}</span>
                     </td>
                     <td className="px-4 py-3">
                       <BookingStatusBadge status={booking.status} />

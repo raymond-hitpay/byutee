@@ -1,8 +1,6 @@
 import Link from 'next/link';
-import { eq } from 'drizzle-orm';
 import { format, parseISO } from 'date-fns';
-import { db } from '@/lib/db';
-import { bookings, organizations, services } from '@/lib/db/schema';
+import { supabase } from '@/lib/supabase';
 
 interface PageProps {
   params: Promise<{ orgSlug: string }>;
@@ -26,15 +24,27 @@ export default async function SuccessPage({ params, searchParams }: PageProps) {
     );
   }
 
-  const [booking] = await db.select().from(bookings).where(eq(bookings.id, bookingId));
+  const { data: booking } = await supabase
+    .from('bookings')
+    .select('*')
+    .eq('id', bookingId)
+    .maybeSingle();
 
-  // Load org to verify booking belongs to it
-  const [org] = await db.select().from(organizations).where(eq(organizations.slug, orgSlug));
-  if (!org || !booking || booking.orgId !== org.id) {
+  const { data: org } = await supabase
+    .from('organizations')
+    .select('id, slug')
+    .eq('slug', orgSlug)
+    .maybeSingle();
+
+  if (!org || !booking || booking.org_id !== org.id) {
     return <div>Booking not found.</div>;
   }
 
-  const [service] = await db.select().from(services).where(eq(services.id, booking.serviceId));
+  const { data: service } = await supabase
+    .from('services')
+    .select('name')
+    .eq('id', booking.service_id)
+    .maybeSingle();
 
   const isConfirmed = booking.status === 'confirmed';
 
@@ -89,7 +99,7 @@ export default async function SuccessPage({ params, searchParams }: PageProps) {
           <div className="bg-gray-50 rounded-xl p-4 text-left space-y-3 mb-6">
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Name</span>
-              <span className="font-medium text-gray-900">{booking.customerName}</span>
+              <span className="font-medium text-gray-900">{booking.customer_name}</span>
             </div>
             {service && (
               <div className="flex justify-between text-sm">
@@ -99,11 +109,13 @@ export default async function SuccessPage({ params, searchParams }: PageProps) {
             )}
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Date</span>
-              <span className="font-medium text-gray-900">{format(parseISO(booking.bookingDate), 'EEEE, MMMM d, yyyy')}</span>
+              <span className="font-medium text-gray-900">
+                {format(parseISO(booking.booking_date), 'EEEE, MMMM d, yyyy')}
+              </span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Time</span>
-              <span className="font-medium text-gray-900">{booking.bookingTime}</span>
+              <span className="font-medium text-gray-900">{booking.booking_time}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Status</span>

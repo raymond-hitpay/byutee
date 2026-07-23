@@ -1,9 +1,7 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { requireSession } from '@/lib/auth';
-import { db } from '@/lib/db';
-import { services } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { supabase } from '@/lib/supabase';
 import { Clock, Plus } from 'lucide-react';
 
 export default async function ServicesPage() {
@@ -14,10 +12,12 @@ export default async function ServicesPage() {
     redirect('/login');
   }
 
-  const allServices = await db
-    .select()
-    .from(services)
-    .where(eq(services.orgId, session.orgId!));
+  const { data: allServices } = await supabase
+    .from('services')
+    .select('*')
+    .eq('org_id', session.orgId!);
+
+  const services = allServices ?? [];
 
   return (
     <div className="p-6 space-y-6">
@@ -35,7 +35,7 @@ export default async function ServicesPage() {
         </Link>
       </div>
 
-      {allServices.length === 0 ? (
+      {services.length === 0 ? (
         <div className="text-center py-16 border-2 border-dashed border-gray-200 rounded-lg">
           <p className="text-gray-500 text-sm">No services yet.</p>
           <Link
@@ -47,7 +47,7 @@ export default async function ServicesPage() {
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {allServices.map((service) => (
+          {services.map((service) => (
             <Link
               key={service.id}
               href={`/dashboard/services/${service.id}`}
@@ -60,7 +60,7 @@ export default async function ServicesPage() {
               <div className="mt-4 flex items-center justify-between text-sm">
                 <span className="flex items-center gap-1 text-gray-500">
                   <Clock className="h-3.5 w-3.5" />
-                  {service.durationMinutes} min
+                  {service.duration_minutes} min
                 </span>
                 <span className="font-semibold text-gray-900">
                   {service.currency} {service.price.toFixed(2)}

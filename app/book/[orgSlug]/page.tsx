@@ -1,6 +1,4 @@
-import { eq } from 'drizzle-orm';
-import { db } from '@/lib/db';
-import { organizations, services } from '@/lib/db/schema';
+import { supabase } from '@/lib/supabase';
 import PublicBookingFlow from './PublicBookingFlow';
 
 interface PageProps {
@@ -10,10 +8,11 @@ interface PageProps {
 export default async function BookingPage({ params }: PageProps) {
   const { orgSlug } = await params;
 
-  const [org] = await db
-    .select()
-    .from(organizations)
-    .where(eq(organizations.slug, orgSlug));
+  const { data: org } = await supabase
+    .from('organizations')
+    .select('id, name, slug')
+    .eq('slug', orgSlug)
+    .maybeSingle();
 
   if (!org) {
     return (
@@ -26,10 +25,15 @@ export default async function BookingPage({ params }: PageProps) {
     );
   }
 
-  const allServices = await db
-    .select()
-    .from(services)
-    .where(eq(services.orgId, org.id));
+  const { data: allServices } = await supabase
+    .from('services')
+    .select('*')
+    .eq('org_id', org.id);
 
-  return <PublicBookingFlow org={{ name: org.name, slug: org.slug }} services={allServices} />;
+  return (
+    <PublicBookingFlow
+      org={{ name: org.name, slug: org.slug }}
+      services={allServices ?? []}
+    />
+  );
 }

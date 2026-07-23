@@ -1,22 +1,21 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
-import { organizations } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { supabase } from '@/lib/supabase';
 import { requireSession } from '@/lib/auth';
 
 export async function POST() {
   try {
     const session = await requireSession();
-    await db.update(organizations)
-      .set({
-        hitpayAccessToken: null,
-        hitpayRefreshToken: null,
-        hitpayBusinessId: null,
-        hitpayBusinessName: null,
-        hitpayApiKey: null,
-        hitpayConnectionType: null,
+    await supabase
+      .from('organizations')
+      .update({
+        hitpay_access_token: null,
+        hitpay_refresh_token: null,
+        hitpay_business_id: null,
+        hitpay_business_name: null,
+        hitpay_api_key: null,
+        hitpay_connection_type: null,
       })
-      .where(eq(organizations.id, session.orgId!));
+      .eq('id', session.orgId!);
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

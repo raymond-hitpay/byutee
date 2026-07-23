@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
-import { bookings } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { supabase } from '@/lib/supabase';
 import { verifyHitPayWebhook } from '@/lib/hitpay-payments';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
-  // Parse application/x-www-form-urlencoded
   const formData = await req.formData();
   const payload: Record<string, string> = {};
   formData.forEach((value, key) => { payload[key] = value.toString(); });
@@ -31,13 +28,15 @@ export async function POST(req: NextRequest) {
   }
 
   if (status === 'completed') {
-    await db.update(bookings)
-      .set({ status: 'confirmed', hitpayPaymentId: paymentId })
-      .where(eq(bookings.id, bookingId));
+    await supabase
+      .from('bookings')
+      .update({ status: 'confirmed', hitpay_payment_id: paymentId })
+      .eq('id', bookingId);
   } else if (status === 'failed') {
-    await db.update(bookings)
-      .set({ status: 'cancelled' })
-      .where(eq(bookings.id, bookingId));
+    await supabase
+      .from('bookings')
+      .update({ status: 'cancelled' })
+      .eq('id', bookingId);
   }
 
   return NextResponse.json({ received: true });

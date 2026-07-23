@@ -1,6 +1,2 @@
-import Database from 'better-sqlite3';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
-import * as schema from './schema';
-
-const sqlite = new Database(process.env.DATABASE_URL ?? './byutee.db');
-export const db = drizzle(sqlite, { schema });
+// Re-export for backwards compatibility — use @/lib/supabase directly in new code
+export { supabase } from '@/lib/supabase';

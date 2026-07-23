@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { nanoid } from 'nanoid';
-import { db } from '@/lib/db';
-import { organizations } from '@/lib/db/schema';
+import { supabase } from '@/lib/supabase';
 import { getSession } from '@/lib/auth';
 import { generateSlug } from '@/lib/utils';
 
@@ -11,12 +10,13 @@ export async function POST(req: NextRequest) {
   if (!name || !email || !password) {
     return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
   }
-  const passwordHash = await bcrypt.hash(password, 12);
+  const password_hash = await bcrypt.hash(password, 12);
   const id = nanoid();
   const slug = generateSlug(name);
-  try {
-    await db.insert(organizations).values({ id, name, slug, email, passwordHash });
-  } catch {
+  const { error } = await supabase
+    .from('organizations')
+    .insert({ id, name, slug, email, password_hash });
+  if (error) {
     return NextResponse.json({ error: 'Email already in use' }, { status: 409 });
   }
   const session = await getSession();

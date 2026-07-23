@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { db } from '@/lib/db';
-import { organizations } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { supabase } from '@/lib/supabase';
 import { exchangeCodeForTokens, getBusinessInfo } from '@/lib/hitpay-oauth';
 import { requireSession } from '@/lib/auth';
 
@@ -37,16 +35,17 @@ export async function GET(req: NextRequest) {
   try {
     const tokens = await exchangeCodeForTokens(code);
     const business = await getBusinessInfo(tokens.access_token);
-    await db.update(organizations)
-      .set({
-        hitpayAccessToken: tokens.access_token,
-        hitpayRefreshToken: tokens.refresh_token,
-        hitpayBusinessId: business.id,
-        hitpayBusinessName: business.name,
-        hitpayConnectionType: 'oauth',
-        hitpayApiKey: null,
+    await supabase
+      .from('organizations')
+      .update({
+        hitpay_access_token: tokens.access_token,
+        hitpay_refresh_token: tokens.refresh_token,
+        hitpay_business_id: business.id,
+        hitpay_business_name: business.name,
+        hitpay_connection_type: 'oauth',
+        hitpay_api_key: null,
       })
-      .where(eq(organizations.id, session.orgId!));
+      .eq('id', session.orgId!);
     return NextResponse.redirect(`${settingsUrl}?connected=true`);
   } catch (err) {
     console.error('[OAuth Callback]', err);

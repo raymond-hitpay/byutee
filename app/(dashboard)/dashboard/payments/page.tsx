@@ -1,8 +1,6 @@
 import { redirect } from 'next/navigation';
 import { requireSession } from '@/lib/auth';
-import { db } from '@/lib/db';
-import { bookings, services } from '@/lib/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { supabase } from '@/lib/supabase';
 import { format, parseISO } from 'date-fns';
 
 const STATUS_STYLES: Record<string, { label: string; className: string }> = {
@@ -19,18 +17,19 @@ export default async function PaymentsPage() {
     redirect('/login');
   }
 
-  const rows = await db
-    .select({ booking: bookings, service: services })
-    .from(bookings)
-    .leftJoin(services, eq(bookings.serviceId, services.id))
-    .where(eq(bookings.orgId, session.orgId!))
-    .orderBy(desc(bookings.createdAt));
+  const { data: rows } = await supabase
+    .from('bookings')
+    .select('*, services(*)')
+    .eq('org_id', session.orgId!)
+    .order('created_at', { ascending: false });
 
-  const totalPaid = rows
-    .filter((r) => r.booking.status === 'confirmed')
-    .reduce((sum, r) => sum + (r.service?.price ?? 0), 0);
+  const payments = rows ?? [];
 
-  const currency = rows.find((r) => r.service?.currency)?.service?.currency ?? 'SGD';
+  const totalPaid = payments
+    .filter((r) => r.status === 'confirmed')
+    .reduce((sum, r) => sum + (r.services?.price ?? 0), 0);
+
+  const currency = payments.find((r) => r.services?.currency)?.services?.currency ?? 'SGD';
 
   return (
     <div className="p-6 space-y-6">
@@ -50,19 +49,19 @@ export default async function PaymentsPage() {
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <p className="text-xs text-gray-500 uppercase tracking-wide">Paid</p>
           <p className="mt-1 text-2xl font-semibold text-green-700">
-            {rows.filter((r) => r.booking.status === 'confirmed').length}
+            {payments.filter((r) => r.status === 'confirmed').length}
           </p>
         </div>
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <p className="text-xs text-gray-500 uppercase tracking-wide">Pending</p>
           <p className="mt-1 text-2xl font-semibold text-yellow-600">
-            {rows.filter((r) => r.booking.status === 'pending_payment').length}
+            {payments.filter((r) => r.status === 'pending_payment').length}
           </p>
         </div>
       </div>
 
       {/* Table */}
-      {rows.length === 0 ? (
+      {payments.length === 0 ? (
         <p className="text-gray-500 text-sm">No payments yet.</p>
       ) : (
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
@@ -78,30 +77,32 @@ export default async function PaymentsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {rows.map(({ booking, service }) => {
-                const statusConfig = STATUS_STYLES[booking.status] ?? {
-                  label: booking.status,
+              {payments.map((row) => {
+                const statusConfig = STATUS_STYLES[row.status] ?? {
+                  label: row.status,
                   className: 'bg-gray-100 text-gray-600',
                 };
                 return (
-                  <tr key={booking.id} className="hover:bg-gray-50">
+                  <tr key={row.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3">
-                      <p className="font-medium text-gray-900">{booking.customerName}</p>
-                      <p className="text-xs text-gray-500">{booking.customerEmail}</p>
+                      <p className="font-medium text-gray-900">{row.customer_name}</p>
+                      <p className="text-xs text-gray-500">{row.customer_email}</p>
                     </td>
-                    <td className="px-4 py-3 text-gray-700">{service?.name ?? '—'}</td>
+                    <td className="px-4 py-3 text-gray-700">{row.services?.name ?? '—'}</td>
                     <td className="px-4 py-3 text-gray-700">
                       {(() => {
                         try {
-                          return format(parseISO(booking.bookingDate), 'MMM d, yyyy');
+                          return format(parseISO(row.booking_date), 'MMM d, yyyy');
                         } catch {
-                          return booking.bookingDate;
+                          return row.booking_date;
                         }
                       })()}{' '}
-                      <span className="text-gray-400">at {booking.bookingTime}</span>
+                      <span className="text-gray-400">at {row.booking_time}</span>
                     </td>
                     <td className="px-4 py-3 font-medium text-gray-900">
-                      {service ? `${service.currency} ${service.price.toFixed(2)}` : '—'}
+                      {row.services
+                        ? `${row.services.currency} ${row.services.price.toFixed(2)}`
+                        : '—'}
                     </td>
                     <td className="px-4 py-3">
                       <span
@@ -111,7 +112,7 @@ export default async function PaymentsPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-xs text-gray-500 font-mono">
-                      {booking.hitpayPaymentId ?? '—'}
+                      {row.hitpay_payment_id ?? '—'}
                     </td>
                   </tr>
                 );

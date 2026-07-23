@@ -17,7 +17,7 @@ export function ServiceEditForm({ service }: { service: Service }) {
   const [form, setForm] = useState({
     name: service.name,
     description: service.description ?? '',
-    durationMinutes: service.durationMinutes,
+    durationMinutes: service.duration_minutes,
     price: service.price,
     currency: service.currency,
   });
