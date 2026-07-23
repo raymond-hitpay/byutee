@@ -35,5 +35,6 @@ export interface Booking {
   status: string;
   hitpay_payment_id: string | null;
   hitpay_checkout_url: string | null;
+  hitpay_payment_method: string | null;
   created_at: string | null;
 }

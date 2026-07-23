@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
     customer_email: customerEmail,
     booking_date: bookingDate,
     booking_time: bookingTime,
-    status: useHitPay ? 'pending_payment' : 'confirmed',
+    status: 'pending_payment',
   });
 
   if (useHitPay) {

@@ -22,6 +22,7 @@ export async function POST(req: NextRequest) {
   const bookingId = payload['reference_number'];
   const status = payload['status'];
   const paymentId = payload['payment_id'];
+  const paymentMethod = payload['payment_method'] ?? null;
 
   if (!bookingId) {
     return NextResponse.json({ error: 'Missing reference_number' }, { status: 400 });
@@ -30,7 +31,7 @@ export async function POST(req: NextRequest) {
   if (status === 'completed') {
     await supabase
       .from('bookings')
-      .update({ status: 'confirmed', hitpay_payment_id: paymentId })
+      .update({ status: 'confirmed', hitpay_payment_id: paymentId, hitpay_payment_method: paymentMethod })
       .eq('id', bookingId);
   } else if (status === 'failed') {
     await supabase

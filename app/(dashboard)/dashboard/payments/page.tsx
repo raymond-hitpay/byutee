@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import { requireSession } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { format, parseISO } from 'date-fns';
@@ -8,6 +9,13 @@ const STATUS_STYLES: Record<string, { label: string; className: string }> = {
   pending_payment: { label: 'Pending', className: 'bg-yellow-100 text-yellow-800' },
   cancelled: { label: 'Cancelled', className: 'bg-red-100 text-red-800' },
 };
+
+function formatPaymentMethod(method: string | null): string {
+  if (!method) return 'HitPay';
+  return method
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 export default async function PaymentsPage() {
   let session;
@@ -73,7 +81,8 @@ export default async function PaymentsPage() {
                 <th className="px-4 py-3 text-left font-medium text-gray-500">Booking Date</th>
                 <th className="px-4 py-3 text-left font-medium text-gray-500">Amount</th>
                 <th className="px-4 py-3 text-left font-medium text-gray-500">Status</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-500">Payment ID</th>
+                <th className="px-4 py-3 text-left font-medium text-gray-500">Source</th>
+                <th className="px-4 py-3 text-left font-medium text-gray-500">Method</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -82,6 +91,11 @@ export default async function PaymentsPage() {
                   label: row.status,
                   className: 'bg-gray-100 text-gray-600',
                 };
+
+                const isHitPay = !!row.hitpay_checkout_url;
+                const isCounter = !isHitPay;
+                const isUnpaid = isCounter && row.status === 'pending_payment';
+
                 return (
                   <tr key={row.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3">
@@ -111,8 +125,34 @@ export default async function PaymentsPage() {
                         {statusConfig.label}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-xs text-gray-500 font-mono">
-                      {row.hitpay_payment_id ?? '—'}
+                    {/* Source */}
+                    <td className="px-4 py-3">
+                      {isHitPay ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700">
+                          HitPay
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                          Manual
+                        </span>
+                      )}
+                    </td>
+                    {/* Method */}
+                    <td className="px-4 py-3">
+                      {isUnpaid ? (
+                        <Link
+                          href={`/dashboard/bookings/${row.id}`}
+                          className="inline-flex items-center gap-1 text-xs font-medium text-yellow-700 bg-yellow-50 border border-yellow-200 px-2 py-0.5 rounded-full hover:bg-yellow-100 transition-colors"
+                        >
+                          Unpaid — view booking
+                        </Link>
+                      ) : isCounter ? (
+                        <span className="text-sm text-gray-700">Cash</span>
+                      ) : (
+                        <span className="text-sm text-gray-700">
+                          {formatPaymentMethod(row.hitpay_payment_method)}
+                        </span>
+                      )}
                     </td>
                   </tr>
                 );
