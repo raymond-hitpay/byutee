@@ -166,6 +166,48 @@ export async function getChargeDetail(
   }
 }
 
+export async function getPaymentRequestStatus(
+  credentials: {
+    connectionType: 'oauth' | 'api_key';
+    accessToken?: string;
+    apiKey?: string;
+  },
+  paymentRequestId: string
+): Promise<{ status: string; paymentId?: string; paymentMethod?: string } | null> {
+  const platformKey = process.env.HITPAY_PLATFORM_KEY;
+  if (!platformKey) return null;
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'X-PLATFORM-KEY': platformKey,
+    'X-Requested-With': 'XMLHttpRequest',
+  };
+
+  if (credentials.connectionType === 'oauth' && credentials.accessToken) {
+    headers['Authorization'] = `Bearer ${credentials.accessToken}`;
+  } else if (credentials.connectionType === 'api_key' && credentials.apiKey) {
+    headers['X-BUSINESS-API-KEY'] = credentials.apiKey;
+  } else {
+    return null;
+  }
+
+  const url = `${process.env.HITPAY_API_BASE}/payment-requests/${paymentRequestId}`;
+  try {
+    const res = await fetch(url, { headers });
+    if (!res.ok) return null;
+    const data = await res.json();
+    // HitPay payment request has a `status` field and `payments` array
+    const payment = data.payments?.[0];
+    return {
+      status: data.status as string,
+      paymentId: payment?.id,
+      paymentMethod: payment?.payment_type,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function verifyHitPayWebhook(
   payload: Record<string, string>,
   receivedHmac: string
