@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { format, parseISO } from 'date-fns';
 import { supabase } from '@/lib/supabase';
+import BookingStatusPoller from '@/components/BookingStatusPoller';
 
 interface PageProps {
   params: Promise<{ orgSlug: string }>;
@@ -49,6 +50,8 @@ export default async function SuccessPage({ params, searchParams }: PageProps) {
   const isConfirmed = booking.status === 'confirmed';
 
   return (
+    <>
+    <BookingStatusPoller bookingId={bookingId} initialStatus={booking.status} />
     <div className="min-h-screen bg-gray-50 py-12">
       <div className="max-w-lg mx-auto px-4">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center">
@@ -140,5 +143,6 @@ export default async function SuccessPage({ params, searchParams }: PageProps) {
         </div>
       </div>
     </div>
+    </>
   );
 }
