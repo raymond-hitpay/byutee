@@ -12,6 +12,8 @@ export interface CreatePaymentRequestParams {
   referenceNumber: string;
   webhookUrl: string;
   redirectUrl: string;
+  paymentMethods?: string[];          // e.g. ['paynow_online'] or ['card']
+  platformCommissionAmount?: string;  // e.g. '30.00'
 }
 
 export async function createPaymentRequest(
@@ -47,6 +49,16 @@ export async function createPaymentRequest(
   const isLocalhost = params.webhookUrl.includes('localhost') || params.webhookUrl.includes('127.0.0.1');
   if (!isLocalhost) {
     body.append('webhook', params.webhookUrl);
+  }
+
+  if (params.paymentMethods && params.paymentMethods.length > 0) {
+    for (const method of params.paymentMethods) {
+      body.append('payment_methods[]', method);
+    }
+  }
+
+  if (params.platformCommissionAmount && parseFloat(params.platformCommissionAmount) > 0) {
+    body.append('platform_commission_amount', params.platformCommissionAmount);
   }
 
   const url = `${process.env.HITPAY_API_BASE}/payment-requests`;

@@ -8,6 +8,7 @@ const STATUS_STYLES: Record<string, { label: string; className: string }> = {
   confirmed: { label: 'Paid', className: 'bg-green-100 text-green-800' },
   pending_payment: { label: 'Pending', className: 'bg-yellow-100 text-yellow-800' },
   cancelled: { label: 'Cancelled', className: 'bg-red-100 text-red-800' },
+  refunded: { label: 'Refunded', className: 'bg-purple-100 text-purple-800' },
 };
 
 function formatPaymentMethod(method: string | null): string {
@@ -97,45 +98,59 @@ export default async function PaymentsPage() {
                 const isUnpaid = isCounter && row.status === 'pending_payment';
 
                 return (
-                  <tr key={row.id} className="hover:bg-gray-50">
+                  <tr key={row.id} className="hover:bg-gray-50 cursor-pointer">
                     <td className="px-4 py-3">
-                      <p className="font-medium text-gray-900">{row.customer_name}</p>
-                      <p className="text-xs text-gray-500">{row.customer_email}</p>
+                      <Link href={`/dashboard/payments/${row.id}`} className="block">
+                        <p className="font-medium text-gray-900">{row.customer_name}</p>
+                        <p className="text-xs text-gray-500">{row.customer_email}</p>
+                      </Link>
                     </td>
-                    <td className="px-4 py-3 text-gray-700">{row.services?.name ?? '—'}</td>
                     <td className="px-4 py-3 text-gray-700">
-                      {(() => {
-                        try {
-                          return format(parseISO(row.booking_date), 'MMM d, yyyy');
-                        } catch {
-                          return row.booking_date;
-                        }
-                      })()}{' '}
-                      <span className="text-gray-400">at {row.booking_time}</span>
+                      <Link href={`/dashboard/payments/${row.id}`} className="block">
+                        {row.services?.name ?? '—'}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-3 text-gray-700">
+                      <Link href={`/dashboard/payments/${row.id}`} className="block">
+                        {(() => {
+                          try {
+                            return format(parseISO(row.booking_date), 'MMM d, yyyy');
+                          } catch {
+                            return row.booking_date;
+                          }
+                        })()}{' '}
+                        <span className="text-gray-400">at {row.booking_time}</span>
+                      </Link>
                     </td>
                     <td className="px-4 py-3 font-medium text-gray-900">
-                      {row.services
-                        ? `${row.services.currency} ${row.services.price.toFixed(2)}`
-                        : '—'}
+                      <Link href={`/dashboard/payments/${row.id}`} className="block">
+                        {row.services
+                          ? `${row.services.currency} ${row.services.price.toFixed(2)}`
+                          : '—'}
+                      </Link>
                     </td>
                     <td className="px-4 py-3">
-                      <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusConfig.className}`}
-                      >
-                        {statusConfig.label}
-                      </span>
+                      <Link href={`/dashboard/payments/${row.id}`} className="block">
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusConfig.className}`}
+                        >
+                          {statusConfig.label}
+                        </span>
+                      </Link>
                     </td>
                     {/* Source */}
                     <td className="px-4 py-3">
-                      {isHitPay ? (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700">
-                          HitPay
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-                          Manual
-                        </span>
-                      )}
+                      <Link href={`/dashboard/payments/${row.id}`} className="block">
+                        {isHitPay ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700">
+                            HitPay
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                            Manual
+                          </span>
+                        )}
+                      </Link>
                     </td>
                     {/* Method */}
                     <td className="px-4 py-3">
@@ -147,11 +162,13 @@ export default async function PaymentsPage() {
                           Unpaid — view booking
                         </Link>
                       ) : isCounter ? (
-                        <span className="text-sm text-gray-700">Cash</span>
+                        <Link href={`/dashboard/payments/${row.id}`} className="block text-sm text-gray-700">
+                          Cash
+                        </Link>
                       ) : (
-                        <span className="text-sm text-gray-700">
+                        <Link href={`/dashboard/payments/${row.id}`} className="block text-sm text-gray-700">
                           {formatPaymentMethod(row.hitpay_payment_method)}
-                        </span>
+                        </Link>
                       )}
                     </td>
                   </tr>

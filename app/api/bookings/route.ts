@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     (connectionType === 'oauth' && !!org.hitpay_access_token) ||
     (connectionType === 'api_key' && !!org.hitpay_api_key);
 
-  const useHitPay = paymentMethod === 'hitpay' && hasHitPay;
+  const useHitPay = (paymentMethod === 'hitpay' || paymentMethod === 'paynow' || paymentMethod === 'cards') && hasHitPay;
 
   const bookingId = nanoid();
   const appUrl = process.env.NEXT_PUBLIC_APP_URL!;
@@ -50,6 +50,23 @@ export async function POST(req: NextRequest) {
 
   if (useHitPay) {
     try {
+      // Determine payment methods and commission based on selected method
+      let hitpayPaymentMethods: string[] | undefined;
+      let platformCommissionAmount: string | undefined;
+
+      if (paymentMethod === 'paynow') {
+        hitpayPaymentMethods = ['paynow_online'];
+        // Fetch platform commission for PayNow
+        const { data: commissionSetting } = await supabase
+          .from('platform_settings')
+          .select('value')
+          .eq('key', 'paynow_commission_amount')
+          .maybeSingle();
+        platformCommissionAmount = commissionSetting?.value ?? undefined;
+      } else if (paymentMethod === 'cards') {
+        hitpayPaymentMethods = ['card'];
+      }
+
       const payment = await createPaymentRequest({
         connectionType: connectionType!,
         accessToken: org.hitpay_access_token ?? undefined,
@@ -62,6 +79,8 @@ export async function POST(req: NextRequest) {
         referenceNumber: bookingId,
         webhookUrl: `${appUrl}/api/webhooks/hitpay`,
         redirectUrl: successUrl,
+        paymentMethods: hitpayPaymentMethods,
+        platformCommissionAmount,
       });
 
       await supabase

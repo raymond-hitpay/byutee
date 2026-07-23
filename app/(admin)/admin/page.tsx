@@ -49,7 +49,7 @@ export default async function AdminBusinessesPage() {
               <th className="px-4 py-3 text-left font-semibold text-gray-600">HitPay</th>
               <th className="px-4 py-3 text-left font-semibold text-gray-600">HitPay Business</th>
               <th className="px-4 py-3 text-left font-semibold text-gray-600">Service</th>
-              <th className="px-4 py-3 text-left font-semibold text-gray-600">Bookings</th>
+              <th className="px-4 py-3 text-left font-semibold text-gray-600">Bookings (Confirmed / Total)</th>
               <th className="px-4 py-3 text-left font-semibold text-gray-600">Joined</th>
             </tr>
           </thead>
@@ -101,7 +101,7 @@ export default async function AdminBusinessesPage() {
                   )}
                 </td>
                 <td className="px-4 py-3 text-gray-600">
-                  {totalBookings} / {confirmedCount}
+                  {confirmedCount} / {totalBookings}
                 </td>
                 <td className="px-4 py-3 text-gray-500">
                   {org.created_at ? new Date(org.created_at).toLocaleDateString() : '—'}

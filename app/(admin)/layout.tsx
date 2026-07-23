@@ -22,6 +22,18 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           >
             Businesses
           </Link>
+          <Link
+            href="/admin/payments"
+            className="block px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
+          >
+            Payments
+          </Link>
+          <Link
+            href="/admin/settings"
+            className="block px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
+          >
+            Settings
+          </Link>
         </nav>
         <div className="px-4 py-4 border-t border-gray-700">
           <form action="/api/admin/logout" method="POST">

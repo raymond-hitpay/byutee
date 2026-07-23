@@ -34,11 +34,18 @@ export default async function BookingPage({ params }: PageProps) {
     (org.hitpay_connection_type === 'oauth' && !!org.hitpay_access_token) ||
     (org.hitpay_connection_type === 'api_key' && !!org.hitpay_api_key);
 
+  const { data: commissionSetting } = await supabase
+    .from('platform_settings')
+    .select('value')
+    .eq('key', 'paynow_commission_amount')
+    .maybeSingle();
+
   return (
     <PublicBookingFlow
       org={{ name: org.name, slug: org.slug }}
       services={allServices ?? []}
       hasHitPay={hasHitPay}
+      paynowCommissionAmount={commissionSetting?.value ?? '0'}
     />
   );
 }

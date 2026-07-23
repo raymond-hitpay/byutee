@@ -19,12 +19,13 @@ interface Props {
   org: Org;
   services: Service[];
   hasHitPay: boolean;
+  paynowCommissionAmount?: string;
 }
 
 type Step = 'services' | 'datetime' | 'details' | 'payment' | 'processing';
-type PaymentMethod = 'hitpay' | 'counter';
+type PaymentMethod = 'paynow' | 'cards' | 'counter';
 
-export default function PublicBookingFlow({ org, services, hasHitPay }: Props) {
+export default function PublicBookingFlow({ org, services, hasHitPay, paynowCommissionAmount }: Props) {
   const [step, setStep] = useState<Step>('services');
   const [selected, setSelected] = useState<Service | null>(null);
   const [bookingDate, setBookingDate] = useState('');
@@ -305,21 +306,39 @@ export default function PublicBookingFlow({ org, services, hasHitPay }: Props) {
 
               <div className="space-y-3">
                 {hasHitPay && (
-                  <button
-                    onClick={() => handleBook('hitpay')}
-                    className="w-full flex items-center gap-4 border-2 border-indigo-600 rounded-xl px-5 py-4 hover:bg-indigo-50 transition-colors text-left group"
-                  >
-                    <div className="h-10 w-10 rounded-xl bg-indigo-100 flex items-center justify-center flex-shrink-0 group-hover:bg-indigo-200 transition-colors">
-                      <CreditCard className="h-5 w-5 text-indigo-600" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-gray-900">Pay with HitPay</p>
-                      <p className="text-sm text-gray-500">Credit card, PayNow, and more</p>
-                    </div>
-                    <span className="ml-auto text-base font-bold text-indigo-600">
-                      {selected.currency} {selected.price.toFixed(2)}
-                    </span>
-                  </button>
+                  <>
+                    <button
+                      onClick={() => handleBook('paynow')}
+                      className="w-full flex items-center gap-4 border-2 border-indigo-600 rounded-xl px-5 py-4 hover:bg-indigo-50 transition-colors text-left group"
+                    >
+                      <div className="h-10 w-10 rounded-xl bg-indigo-100 flex items-center justify-center flex-shrink-0 group-hover:bg-indigo-200 transition-colors">
+                        <CreditCard className="h-5 w-5 text-indigo-600" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-900">PayNow by HitPay</p>
+                        <p className="text-sm text-gray-500">Instant bank transfer via PayNow</p>
+                      </div>
+                      <span className="ml-auto text-base font-bold text-indigo-600">
+                        {selected.currency} {selected.price.toFixed(2)}
+                      </span>
+                    </button>
+
+                    <button
+                      onClick={() => handleBook('cards')}
+                      className="w-full flex items-center gap-4 border-2 border-indigo-600 rounded-xl px-5 py-4 hover:bg-indigo-50 transition-colors text-left group"
+                    >
+                      <div className="h-10 w-10 rounded-xl bg-indigo-100 flex items-center justify-center flex-shrink-0 group-hover:bg-indigo-200 transition-colors">
+                        <CreditCard className="h-5 w-5 text-indigo-600" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-900">Cards by HitPay</p>
+                        <p className="text-sm text-gray-500">Visa, Mastercard, and more</p>
+                      </div>
+                      <span className="ml-auto text-base font-bold text-indigo-600">
+                        {selected.currency} {selected.price.toFixed(2)}
+                      </span>
+                    </button>
+                  </>
                 )}
 
                 <button
