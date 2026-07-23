@@ -43,7 +43,12 @@ export default function SuccessPage() {
       while (attempts < maxAttempts) {
         try {
           const res = await fetch('/api/subscriptions/confirm', { method: 'POST' });
-          if (res.ok) {
+          const data = await res.json();
+          
+          console.log(`Confirm attempt ${attempts + 1}:`, data);
+          
+          // Check if confirmed is true
+          if (data.confirmed) {
             // Wait a bit for session to propagate, then redirect
             setTimeout(() => {
               setRedirecting(true);
@@ -61,6 +66,8 @@ export default function SuccessPage() {
           await new Promise(resolve => setTimeout(resolve, 500));
         }
       }
+      
+      console.warn('Failed to confirm subscription after 5 attempts');
     };
 
     confirmSubscription();
