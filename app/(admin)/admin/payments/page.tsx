@@ -68,6 +68,7 @@ export default async function AdminPaymentsPage() {
               <th className="px-4 py-3 text-left font-semibold text-gray-600">Method</th>
               <th className="px-4 py-3 text-left font-semibold text-gray-600">Booking Date</th>
               <th className="px-4 py-3 text-left font-semibold text-gray-600">Paid At</th>
+              <th className="px-4 py-3" />
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -124,12 +125,20 @@ export default async function AdminPaymentsPage() {
                       ? format(parseISO(booking.created_at), 'dd MMM yyyy, HH:mm')
                       : '—'}
                   </td>
+                  <td className="px-4 py-3 text-right">
+                    <Link
+                      href={`/admin/payments/${booking.id}`}
+                      className="text-xs font-medium text-indigo-600 hover:text-indigo-800"
+                    >
+                      View →
+                    </Link>
+                  </td>
                 </tr>
               );
             })}
             {allBookings.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-gray-400">
+                <td colSpan={8} className="px-4 py-8 text-center text-gray-400">
                   No confirmed payments yet.
                 </td>
               </tr>

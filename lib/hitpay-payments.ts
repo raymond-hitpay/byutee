@@ -83,6 +83,89 @@ export async function createPaymentRequest(
   return { id: data.id, url: data.url };
 }
 
+export interface HitPayChargeDetail {
+  id: string;
+  currency: string;
+  home_currency: string;
+  exchange_rate: number | null;
+  amount: number;
+  amount_without_fees: number;
+  refunded_amount: number;
+  fixed_fee: number;
+  discount_fee: number;
+  discount_fee_rate: number;
+  status: string;
+  payment_method: {
+    code: string;
+    name: string;
+    display_logo: {
+      sm: string;
+      md: string;
+      lg: string;
+      svg: string;
+      displayName: string;
+      iconName: string;
+    };
+    method_logo: {
+      sm: string;
+      md: string;
+      lg: string;
+      svg: string;
+      displayName: string;
+      iconName: string;
+    };
+    data?: {
+      brand?: string;
+      last4?: string;
+      country_code?: string;
+      country?: string;
+    };
+  } | null;
+  customer: {
+    name: string;
+    email: string;
+    phone_number?: string;
+  } | null;
+  closed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function getChargeDetail(
+  credentials: {
+    connectionType: 'oauth' | 'api_key';
+    accessToken?: string;
+    apiKey?: string;
+  },
+  chargeId: string
+): Promise<HitPayChargeDetail | null> {
+  const platformKey = process.env.HITPAY_PLATFORM_KEY;
+  if (!platformKey) return null;
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'X-PLATFORM-KEY': platformKey,
+    'X-Requested-With': 'XMLHttpRequest',
+  };
+
+  if (credentials.connectionType === 'oauth' && credentials.accessToken) {
+    headers['Authorization'] = `Bearer ${credentials.accessToken}`;
+  } else if (credentials.connectionType === 'api_key' && credentials.apiKey) {
+    headers['X-BUSINESS-API-KEY'] = credentials.apiKey;
+  } else {
+    return null;
+  }
+
+  const url = `${process.env.HITPAY_API_BASE}/charges/${chargeId}`;
+  try {
+    const res = await fetch(url, { headers });
+    if (!res.ok) return null;
+    return (await res.json()) as HitPayChargeDetail;
+  } catch {
+    return null;
+  }
+}
+
 export function verifyHitPayWebhook(
   payload: Record<string, string>,
   receivedHmac: string

@@ -1,11 +1,9 @@
-import { redirect, notFound } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { requireSession } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { format, parseISO } from 'date-fns';
 import { ChevronLeft } from 'lucide-react';
-import { RefundButton } from './refund-button';
 import { getChargeDetail } from '@/lib/hitpay-payments';
 
 const STATUS_STYLES: Record<string, { label: string; className: string }> = {
@@ -19,29 +17,21 @@ function fmt(date: string, pattern = 'MMM d, yyyy h:mm a') {
   try { return format(parseISO(date), pattern); } catch { return date; }
 }
 
-export default async function PaymentDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  let session;
-  try {
-    session = await requireSession();
-  } catch {
-    redirect('/login');
-  }
-
+export default async function AdminPaymentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
   const { data: booking } = await supabase
     .from('bookings')
     .select('*, services(*)')
     .eq('id', id)
-    .eq('org_id', session.orgId!)
     .maybeSingle();
 
   if (!booking) notFound();
 
   const { data: org } = await supabase
     .from('organizations')
-    .select('hitpay_connection_type, hitpay_access_token, hitpay_api_key')
-    .eq('id', session.orgId!)
+    .select('id, name, slug, hitpay_connection_type, hitpay_access_token, hitpay_api_key')
+    .eq('id', booking.org_id)
     .maybeSingle();
 
   const statusConfig = STATUS_STYLES[booking.status] ?? {
@@ -51,9 +41,7 @@ export default async function PaymentDetailPage({ params }: { params: Promise<{ 
 
   const isHitPay = !!booking.hitpay_checkout_url;
   const isCounter = !isHitPay;
-  const canRefund = isHitPay && booking.status === 'confirmed' && !!booking.hitpay_payment_id;
 
-  // Fetch HitPay charge detail when we have a charge ID and org credentials
   let charge = null;
   if (booking.hitpay_payment_id && org?.hitpay_connection_type) {
     charge = await getChargeDetail(
@@ -69,9 +57,9 @@ export default async function PaymentDetailPage({ params }: { params: Promise<{ 
   const pm = charge?.payment_method ?? null;
 
   return (
-    <div className="p-6 max-w-2xl">
+    <div className="max-w-2xl">
       <Link
-        href="/dashboard/payments"
+        href="/admin/payments"
         className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-900 mb-6"
       >
         <ChevronLeft className="h-4 w-4" />
@@ -89,6 +77,17 @@ export default async function PaymentDetailPage({ params }: { params: Promise<{ 
       </div>
 
       <div className="space-y-4">
+        {/* Business */}
+        {org && (
+          <div className="bg-white rounded-lg border border-gray-200 p-5">
+            <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Business</h2>
+            <Link href={`/admin/${org.id}`} className="font-semibold text-gray-900 hover:text-blue-600 hover:underline">
+              {org.name}
+            </Link>
+            <p className="text-sm text-gray-500 mt-0.5">/{org.slug}</p>
+          </div>
+        )}
+
         {/* Customer */}
         <div className="bg-white rounded-lg border border-gray-200 p-5">
           <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Customer</h2>
@@ -136,6 +135,19 @@ export default async function PaymentDetailPage({ params }: { params: Promise<{ 
                   </p>
                 )}
               </div>
+              <div className="ml-auto flex items-center gap-2">
+                <div className="h-8 w-8 rounded border border-gray-200 bg-white flex items-center justify-center overflow-hidden">
+                  <Image
+                    src={pm.method_logo?.md}
+                    alt={pm.method_logo?.displayName}
+                    width={24}
+                    height={24}
+                    className="object-contain"
+                    unoptimized
+                  />
+                </div>
+                <span className="text-xs text-gray-400">{pm.method_logo?.displayName}</span>
+              </div>
             </div>
           )}
 
@@ -175,6 +187,12 @@ export default async function PaymentDetailPage({ params }: { params: Promise<{ 
                   <div className="flex justify-between">
                     <span className="text-gray-500">Refunded</span>
                     <span className="text-purple-700">− {charge.currency.toUpperCase()} {charge.refunded_amount.toFixed(2)}</span>
+                  </div>
+                )}
+                {charge.exchange_rate && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Exchange Rate</span>
+                    <span className="text-gray-700">{charge.exchange_rate}</span>
                   </div>
                 )}
               </>
@@ -223,22 +241,6 @@ export default async function PaymentDetailPage({ params }: { params: Promise<{ 
             )}
           </div>
         </div>
-
-        {/* Refund */}
-        {canRefund && booking.services && (
-          <div className="bg-white rounded-lg border border-gray-200 p-5">
-            <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Refund</h2>
-            <p className="text-sm text-gray-500 mb-4">
-              Issue a full refund to the customer via HitPay. The refund will appear in both
-              your HitPay dashboard and the customer&apos;s account.
-            </p>
-            <RefundButton
-              bookingId={booking.id}
-              amount={booking.services.price}
-              currency={booking.services.currency}
-            />
-          </div>
-        )}
 
         {booking.status === 'refunded' && (
           <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
