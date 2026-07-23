@@ -35,19 +35,31 @@ export default function SuccessPage() {
     });
     setNextRenewal(formattedDate);
 
-    // Confirm subscription on page load
+    // Confirm subscription on page load with retries
     const confirmSubscription = async () => {
-      try {
-        const res = await fetch('/api/subscriptions/confirm', { method: 'POST' });
-        if (res.ok) {
-          // Wait a bit for session to propagate, then redirect
-          setTimeout(() => {
-            setRedirecting(true);
-            router.push('/dashboard');
-          }, 500);
+      let attempts = 0;
+      const maxAttempts = 5;
+
+      while (attempts < maxAttempts) {
+        try {
+          const res = await fetch('/api/subscriptions/confirm', { method: 'POST' });
+          if (res.ok) {
+            // Wait a bit for session to propagate, then redirect
+            setTimeout(() => {
+              setRedirecting(true);
+              router.push('/dashboard');
+            }, 1000);
+            return;
+          }
+        } catch (error) {
+          console.error('Failed to confirm subscription:', error);
         }
-      } catch (error) {
-        console.error('Failed to confirm subscription:', error);
+
+        attempts++;
+        if (attempts < maxAttempts) {
+          // Wait 500ms before retrying
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
       }
     };
 
