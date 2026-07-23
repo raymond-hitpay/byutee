@@ -19,7 +19,6 @@ import {
   CardFooter,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 
 const CURRENCY_FLAGS: Record<Currency, string> = {
   SGD: '🇸🇬',
@@ -49,10 +48,8 @@ export default function SubscribePlansClient({ activePlanId }: SubscribePlansCli
   // Redirect to dashboard if already subscribed
   useEffect(() => {
     if (mounted && activePlanId) {
-      const timer = setTimeout(() => {
-        router.push('/dashboard');
-      }, 3000); // Show banner for 3 seconds before redirecting
-      return () => clearTimeout(timer);
+      // Redirect immediately
+      router.push('/dashboard');
     }
   }, [mounted, activePlanId, router]);
 
@@ -64,6 +61,30 @@ export default function SubscribePlansClient({ activePlanId }: SubscribePlansCli
 
   if (!mounted) {
     return null;
+  }
+
+  // If subscribed, show banner and redirect
+  if (activePlanId) {
+    return (
+      <main className="min-h-screen py-12 px-4 flex items-center justify-center">
+        <div className="w-full max-w-md">
+          <div className="p-6 bg-green-50 border border-green-200 rounded-lg text-center">
+            <div className="text-4xl mb-4">✓</div>
+            <p className="text-green-800 font-bold text-lg">
+              You are currently on the <span className="capitalize">{activePlanId}</span> plan.
+            </p>
+            <p className="text-green-700 text-sm mt-2 mb-4">
+              To change your plan, please contact our support team.
+            </p>
+            <Link href="/dashboard" className="block mt-4">
+              <Button className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2">
+                Go to Dashboard
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </main>
+    );
   }
 
   const plans = Object.values(SUBSCRIPTION_PLANS);
@@ -105,83 +126,64 @@ export default function SubscribePlansClient({ activePlanId }: SubscribePlansCli
           </p>
         </div>
 
-        {/* Active subscription banner */}
-        {activePlanId && (
-          <div className="mb-8 p-4 bg-green-50 border border-green-200 rounded-lg text-center">
-            <p className="text-green-800 font-medium">
-              You are currently on the <span className="font-bold capitalize">{activePlanId}</span> plan.
-            </p>
-            <p className="text-green-700 text-sm mt-1">
-              Redirecting to your dashboard in 3 seconds...
-            </p>
-            <Link href="/dashboard" className="block mt-3">
-              <Button className="mx-auto bg-green-600 hover:bg-green-700 text-white">
-                Go to Dashboard Now
-              </Button>
-            </Link>
-          </div>
-        )}
-
         {/* Plans Grid */}
-        {!activePlanId && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {plans.map((plan) => {
-              const price = getPlanPrice(plan.id, currency);
-              const formattedPrice = formatPrice(price, currency);
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {plans.map((plan) => {
+            const price = getPlanPrice(plan.id, currency);
+            const formattedPrice = formatPrice(price, currency);
 
-              return (
-                <Card
-                  key={plan.id}
-                  className="flex flex-col hover:shadow-lg transition-shadow duration-300"
-                >
-                  <CardHeader>
-                    <CardTitle>{plan.name}</CardTitle>
-                    <CardDescription>{plan.description}</CardDescription>
-                  </CardHeader>
+            return (
+              <Card
+                key={plan.id}
+                className="flex flex-col hover:shadow-lg transition-shadow duration-300"
+              >
+                <CardHeader>
+                  <CardTitle>{plan.name}</CardTitle>
+                  <CardDescription>{plan.description}</CardDescription>
+                </CardHeader>
 
-                  <CardContent className="flex-grow">
-                    <div className="mb-6">
-                      <div className="text-3xl font-bold text-gray-900">
-                        {formattedPrice}
-                      </div>
-                      <p className="text-sm text-gray-600 mt-2">/month</p>
+                <CardContent className="flex-grow">
+                  <div className="mb-6">
+                    <div className="text-3xl font-bold text-gray-900">
+                      {formattedPrice}
                     </div>
+                    <p className="text-sm text-gray-600 mt-2">/month</p>
+                  </div>
 
-                    <div className="space-y-3">
-                      <p className="text-sm font-semibold text-gray-700">
-                        Features:
-                      </p>
-                      <ul className="space-y-2">
-                        {plan.features.map((feature, idx) => (
-                          <li
-                            key={idx}
-                            className="flex items-start gap-2 text-sm text-gray-700"
-                          >
-                            <span className="text-pink-500 font-bold flex-shrink-0">
-                              ✓
-                            </span>
-                            <span>{feature}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </CardContent>
+                  <div className="space-y-3">
+                    <p className="text-sm font-semibold text-gray-700">
+                      Features:
+                    </p>
+                    <ul className="space-y-2">
+                      {plan.features.map((feature, idx) => (
+                        <li
+                          key={idx}
+                          className="flex items-start gap-2 text-sm text-gray-700"
+                        >
+                          <span className="text-pink-500 font-bold flex-shrink-0">
+                            ✓
+                          </span>
+                          <span>{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </CardContent>
 
-                  <CardFooter>
-                    <Link
-                      href={`/subscribe/${plan.id}/checkout?currency=${currency}`}
-                      className="w-full"
-                    >
-                      <Button className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700">
-                        Choose Plan
-                      </Button>
-                    </Link>
-                  </CardFooter>
-                </Card>
-              );
-            })}
-          </div>
-        )}
+                <CardFooter>
+                  <Link
+                    href={`/subscribe/${plan.id}/checkout?currency=${currency}`}
+                    className="w-full"
+                  >
+                    <Button className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700">
+                      Choose Plan
+                    </Button>
+                  </Link>
+                </CardFooter>
+              </Card>
+            );
+          })}
+        </div>
       </div>
     </main>
   );
