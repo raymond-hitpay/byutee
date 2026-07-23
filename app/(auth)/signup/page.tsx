@@ -31,7 +31,14 @@ export default function SignupPage() {
         setError(data.error || 'Something went wrong');
         return;
       }
-      router.push('/dashboard');
+      // Save org data to sessionStorage
+      if (data.orgName) {
+        sessionStorage.setItem('orgName', data.orgName);
+      }
+      if (data.orgEmail) {
+        sessionStorage.setItem('orgEmail', data.orgEmail);
+      }
+      router.push('/subscribe');
     } catch {
       setError('Network error. Please try again.');
     } finally {

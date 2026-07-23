@@ -24,5 +24,5 @@ export async function POST(req: NextRequest) {
   session.orgSlug = slug;
   session.orgName = name;
   await session.save();
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, orgName: name, orgEmail: email });
 }
