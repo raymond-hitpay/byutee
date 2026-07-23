@@ -4,7 +4,6 @@ import { supabase } from '@/lib/supabase';
 import { getPlanById, getPlanPrice, type Currency } from '@/lib/subscriptions';
 import { getCurrencies } from '@/lib/subscriptions';
 import SubscriptionCheckout from '@/components/SubscriptionCheckout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface CheckoutPageProps {
   params: Promise<{ planId: string }>;
@@ -79,7 +78,7 @@ export default async function CheckoutPage({ params, searchParams }: CheckoutPag
     );
   }
 
-  // Check for existing active subscription
+  // Check for existing active subscription — skip checkout if already subscribed
   const { data: existingSubscription } = await supabase
     .from('subscriptions')
     .select('id, plan_id, status')
@@ -88,31 +87,7 @@ export default async function CheckoutPage({ params, searchParams }: CheckoutPag
     .maybeSingle();
 
   if (existingSubscription) {
-    return (
-      <main className="min-h-screen py-12 px-4">
-        <div className="max-w-2xl mx-auto">
-          <Card>
-            <CardHeader>
-              <CardTitle>Active Subscription</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-gray-700">
-                Your organization already has an active {existingSubscription.plan_id} plan subscription.
-              </p>
-              <p className="text-gray-600">
-                To upgrade or change your plan, please contact our support team.
-              </p>
-              <a
-                href="/subscribe"
-                className="inline-block px-6 py-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold rounded-lg hover:from-pink-600 hover:to-purple-700 transition-all"
-              >
-                Back to Plans
-              </a>
-            </CardContent>
-          </Card>
-        </div>
-      </main>
-    );
+    redirect('/dashboard');
   }
 
   // Calculate plan price
