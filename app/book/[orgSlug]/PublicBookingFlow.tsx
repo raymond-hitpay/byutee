@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Clock, ChevronLeft, X, CalendarDays, CheckCircle } from 'lucide-react';
+import { Clock, ChevronLeft, X, CalendarDays, CreditCard, Store } from 'lucide-react';
 import type { Service } from '@/lib/db/schema';
 
 const TIME_SLOTS = [
@@ -18,11 +18,13 @@ interface Org {
 interface Props {
   org: Org;
   services: Service[];
+  hasHitPay: boolean;
 }
 
-type Step = 'services' | 'datetime' | 'details' | 'processing';
+type Step = 'services' | 'datetime' | 'details' | 'payment' | 'processing';
+type PaymentMethod = 'hitpay' | 'counter';
 
-export default function PublicBookingFlow({ org, services }: Props) {
+export default function PublicBookingFlow({ org, services, hasHitPay }: Props) {
   const [step, setStep] = useState<Step>('services');
   const [selected, setSelected] = useState<Service | null>(null);
   const [bookingDate, setBookingDate] = useState('');
@@ -40,7 +42,7 @@ export default function PublicBookingFlow({ org, services }: Props) {
     setStep('datetime');
   }
 
-  async function handleBook() {
+  async function handleBook(paymentMethod: PaymentMethod) {
     if (!selected || !bookingDate || !bookingTime || !customerName || !customerEmail) return;
     setStep('processing');
     setError('');
@@ -56,6 +58,7 @@ export default function PublicBookingFlow({ org, services }: Props) {
           customerEmail,
           bookingDate,
           bookingTime,
+          paymentMethod,
         }),
       });
 
@@ -63,14 +66,14 @@ export default function PublicBookingFlow({ org, services }: Props) {
 
       if (!res.ok) {
         setError(data.error ?? 'Something went wrong. Please try again.');
-        setStep('details');
+        setStep('payment');
         return;
       }
 
       window.location.href = data.checkoutUrl ?? data.redirectUrl;
     } catch {
       setError('Network error. Please try again.');
-      setStep('details');
+      setStep('payment');
     }
   }
 
@@ -80,6 +83,21 @@ export default function PublicBookingFlow({ org, services }: Props) {
     .slice(0, 2)
     .join('')
     .toUpperCase();
+
+  const bookingSummary = selected ? (
+    <div className="bg-indigo-50 border border-indigo-100 rounded-xl px-4 py-3 mb-6 space-y-1">
+      <p className="font-semibold text-indigo-900">{selected.name}</p>
+      <p className="text-sm text-indigo-600">
+        {new Date(bookingDate + 'T00:00:00').toLocaleDateString('en-GB', {
+          weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+        })}{' '}
+        at {bookingTime}
+      </p>
+      <p className="text-sm text-indigo-600">
+        {selected.duration_minutes} min &middot; {selected.currency} {selected.price.toFixed(2)}
+      </p>
+    </div>
+  ) : null;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -228,18 +246,7 @@ export default function PublicBookingFlow({ org, services }: Props) {
               Back
             </button>
 
-            <div className="bg-indigo-50 border border-indigo-100 rounded-xl px-4 py-3 mb-6 space-y-1">
-              <p className="font-semibold text-indigo-900">{selected.name}</p>
-              <p className="text-sm text-indigo-600">
-                {new Date(bookingDate + 'T00:00:00').toLocaleDateString('en-GB', {
-                  weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-                })}{' '}
-                at {bookingTime}
-              </p>
-              <p className="text-sm text-indigo-600">
-                {selected.duration_minutes} min &middot; {selected.currency} {selected.price.toFixed(2)}
-              </p>
-            </div>
+            {bookingSummary}
 
             <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
               <h3 className="font-semibold text-gray-900">Your Details</h3>
@@ -268,19 +275,75 @@ export default function PublicBookingFlow({ org, services }: Props) {
                 />
               </div>
 
+              <button
+                disabled={!customerName || !customerEmail}
+                onClick={() => setStep('payment')}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold py-3 rounded-xl transition-colors"
+              >
+                Choose Payment Method
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Step: Payment Method ── */}
+        {step === 'payment' && selected && (
+          <div className="max-w-lg">
+            <button
+              onClick={() => setStep('details')}
+              className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-900 mb-6"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Back
+            </button>
+
+            {bookingSummary}
+
+            <div className="bg-white rounded-2xl border border-gray-200 p-6">
+              <h3 className="font-semibold text-gray-900 mb-1">How would you like to pay?</h3>
+              <p className="text-sm text-gray-500 mb-5">Select a payment method to confirm your booking.</p>
+
+              <div className="space-y-3">
+                {hasHitPay && (
+                  <button
+                    onClick={() => handleBook('hitpay')}
+                    className="w-full flex items-center gap-4 border-2 border-indigo-600 rounded-xl px-5 py-4 hover:bg-indigo-50 transition-colors text-left group"
+                  >
+                    <div className="h-10 w-10 rounded-xl bg-indigo-100 flex items-center justify-center flex-shrink-0 group-hover:bg-indigo-200 transition-colors">
+                      <CreditCard className="h-5 w-5 text-indigo-600" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-900">Pay with HitPay</p>
+                      <p className="text-sm text-gray-500">Credit card, PayNow, and more</p>
+                    </div>
+                    <span className="ml-auto text-base font-bold text-indigo-600">
+                      {selected.currency} {selected.price.toFixed(2)}
+                    </span>
+                  </button>
+                )}
+
+                <button
+                  onClick={() => handleBook('counter')}
+                  className="w-full flex items-center gap-4 border-2 border-gray-200 rounded-xl px-5 py-4 hover:border-gray-400 hover:bg-gray-50 transition-colors text-left group"
+                >
+                  <div className="h-10 w-10 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0 group-hover:bg-gray-200 transition-colors">
+                    <Store className="h-5 w-5 text-gray-600" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900">Pay at Counter</p>
+                    <p className="text-sm text-gray-500">Pay when you arrive for your appointment</p>
+                  </div>
+                  <span className="ml-auto text-base font-bold text-gray-700">
+                    {selected.currency} {selected.price.toFixed(2)}
+                  </span>
+                </button>
+              </div>
+
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
+                <div className="mt-4 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
                   {error}
                 </div>
               )}
-
-              <button
-                disabled={!customerName || !customerEmail}
-                onClick={handleBook}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold py-3 rounded-xl transition-colors"
-              >
-                Confirm Booking — {selected.currency} {selected.price.toFixed(2)}
-              </button>
             </div>
           </div>
         )}

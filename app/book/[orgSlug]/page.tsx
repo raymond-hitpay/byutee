@@ -10,7 +10,7 @@ export default async function BookingPage({ params }: PageProps) {
 
   const { data: org } = await supabase
     .from('organizations')
-    .select('id, name, slug')
+    .select('id, name, slug, hitpay_connection_type, hitpay_access_token, hitpay_api_key')
     .eq('slug', orgSlug)
     .maybeSingle();
 
@@ -30,10 +30,15 @@ export default async function BookingPage({ params }: PageProps) {
     .select('*')
     .eq('org_id', org.id);
 
+  const hasHitPay =
+    (org.hitpay_connection_type === 'oauth' && !!org.hitpay_access_token) ||
+    (org.hitpay_connection_type === 'api_key' && !!org.hitpay_api_key);
+
   return (
     <PublicBookingFlow
       org={{ name: org.name, slug: org.slug }}
       services={allServices ?? []}
+      hasHitPay={hasHitPay}
     />
   );
 }

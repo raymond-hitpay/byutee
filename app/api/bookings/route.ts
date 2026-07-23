@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { createPaymentRequest } from '@/lib/hitpay-payments';
 
 export async function POST(req: NextRequest) {
-  const { orgSlug, serviceId, customerName, customerEmail, bookingDate, bookingTime } =
+  const { orgSlug, serviceId, customerName, customerEmail, bookingDate, bookingTime, paymentMethod } =
     await req.json();
 
   if (!orgSlug || !serviceId || !customerName || !customerEmail || !bookingDate || !bookingTime) {
@@ -27,9 +27,11 @@ export async function POST(req: NextRequest) {
   if (!service) return NextResponse.json({ error: 'Service not found' }, { status: 404 });
 
   const connectionType = org.hitpay_connection_type as 'oauth' | 'api_key' | null;
-  const hasPayment =
+  const hasHitPay =
     (connectionType === 'oauth' && !!org.hitpay_access_token) ||
     (connectionType === 'api_key' && !!org.hitpay_api_key);
+
+  const useHitPay = paymentMethod === 'hitpay' && hasHitPay;
 
   const bookingId = nanoid();
   const appUrl = process.env.NEXT_PUBLIC_APP_URL!;
@@ -43,10 +45,10 @@ export async function POST(req: NextRequest) {
     customer_email: customerEmail,
     booking_date: bookingDate,
     booking_time: bookingTime,
-    status: hasPayment ? 'pending_payment' : 'confirmed',
+    status: useHitPay ? 'pending_payment' : 'confirmed',
   });
 
-  if (hasPayment) {
+  if (useHitPay) {
     try {
       const payment = await createPaymentRequest({
         connectionType: connectionType!,
